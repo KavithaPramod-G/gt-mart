@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "GT Mart",
+    "slug": "gt-mart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "gtmart",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gtmart.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1B7A4E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.gtmart.app",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+export type ProductCategory =
+  | 'vegetables'
+  | 'fruits'
+  | 'dairy'
+  | 'snacks'
+  | 'beverages'
+  | 'household';
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  unit: string;
+  category: ProductCategory;
+  emoji: string;
+  inStock: boolean;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+export type OrderStatus =
+  | 'placed'
+  | 'confirmed'
+  | 'preparing'
+  | 'out_for_delivery'
+  | 'delivered';
+
+export type PaymentMethod = 'cod';
+
+export interface DeliveryAddress {
+  name: string;
+  phone: string;
+  addressLine: string;
+  landmark?: string;
+}
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  unit: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  paymentMethod: PaymentMethod;
+  address: DeliveryAddress;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+  whatsappNotifications: WhatsAppNotification[];
+}
+
+export interface WhatsAppNotification {
+  status: OrderStatus;
+  sentAt: string;
+  message: string;
+}
