@@ -18,7 +18,7 @@ export const ORDER_STATUS_LABELS: Record<
   delivered: 'Delivered',
 };
 
-/** Mock OTP for development — replace with real SMS provider in production */
+/** Local fallback OTP when Supabase is not configured */
 export const DEV_MOCK_OTP = '123456';
 export const PHONE_COUNTRY_CODE = '91';
 export const MIN_PHONE_LENGTH = 10;

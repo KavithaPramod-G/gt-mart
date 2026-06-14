@@ -10,82 +10,134 @@ import {
 } from 'react';
 
 import { isSupabaseConfigured } from '@/lib/env';
-import { sendOtpMock, verifyOtpMock, normalizePhone } from '@/services/auth';
 import {
-  fetchProfileByPhone,
-  syncProfileUpdateToDb,
-  upsertProfileInDb,
-} from '@/services/api/profileApi';
+  revokeSessionInDb,
+  validateSessionFromDb,
+  verifyOtpFromDb,
+} from '@/services/api/authApi';
+import { syncProfileUpdateToDb, upsertProfileInDb } from '@/services/api/profileApi';
+import { normalizePhone, sendOtp, verifyOtpLocally } from '@/services/auth';
 import { UserProfile, UserProfileUpdate } from '@/types';
 
+const SESSION_STORAGE_KEY = '@gt_mart_session_id';
 const USER_STORAGE_KEY = '@gt_mart_user';
 
 interface AuthContextValue {
   user: UserProfile | null;
   isLoaded: boolean;
   isAuthenticated: boolean;
-  sendOtp: (phone: string) => Promise<{ success: boolean; message: string }>;
+  sendOtp: (phone: string) => Promise<{
+    success: boolean;
+    message: string;
+    expiresInSeconds?: number;
+    devOtp?: string;
+  }>;
   verifyOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
-  logout: () => Promise<void>;
+  logout: () => Promise<{ success: boolean }>;
   updateProfile: (updates: UserProfileUpdate) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function clearStoredAuth() {
+  await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, USER_STORAGE_KEY]);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const persistSession = useCallback(
+    async (nextSessionId: string | null, profile: UserProfile | null) => {
+      setSessionId(nextSessionId);
+      setUser(profile);
+
+      if (nextSessionId) {
+        await AsyncStorage.setItem(SESSION_STORAGE_KEY, nextSessionId);
+      } else {
+        await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+
+      if (profile) {
+        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(profile));
+      } else {
+        await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
-    const loadUser = async () => {
+    const loadSession = async () => {
       try {
-        const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
-        if (!stored) return;
-
-        const localProfile = JSON.parse(stored) as UserProfile;
-
         if (isSupabaseConfigured()) {
-          const remote = await fetchProfileByPhone(localProfile.phone);
-          if (remote) {
-            setUser(remote);
-            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(remote));
+          const storedSessionId = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+
+          if (!storedSessionId) {
+            await clearStoredAuth();
+            setSessionId(null);
+            setUser(null);
             return;
           }
+
+          const validation = await validateSessionFromDb(storedSessionId);
+          if (validation?.valid && validation.profile) {
+            await persistSession(validation.sessionId ?? storedSessionId, validation.profile);
+            return;
+          }
+
+          await clearStoredAuth();
+          setSessionId(null);
+          setUser(null);
+          return;
         }
 
-        setUser(localProfile);
+        const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+        if (!storedUser) return;
+
+        setUser(JSON.parse(storedUser) as UserProfile);
       } finally {
         setIsLoaded(true);
       }
     };
 
-    loadUser();
-  }, []);
+    loadSession();
+  }, [persistSession]);
 
-  const persistUser = useCallback(async (profile: UserProfile | null) => {
-    setUser(profile);
-    if (profile) {
-      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(profile));
-    } else {
-      await AsyncStorage.removeItem(USER_STORAGE_KEY);
-    }
-  }, []);
-
-  const sendOtp = useCallback(async (phone: string) => {
-    return sendOtpMock(phone);
+  const sendOtpHandler = useCallback(async (phone: string) => {
+    return sendOtp(phone);
   }, []);
 
   const verifyOtp = useCallback(
     async (phone: string, otp: string) => {
-      if (!verifyOtpMock(otp)) {
-        return { success: false, message: 'Invalid OTP. Please try again.' };
-      }
-
       const normalizedPhone = normalizePhone(phone);
       const now = new Date().toISOString();
       const isSameUser = user?.phone === normalizedPhone;
 
-      let profile: UserProfile = {
+      if (isSupabaseConfigured()) {
+        const result = await verifyOtpFromDb(phone, otp);
+        if (!result) {
+          return { success: false, message: 'Could not verify OTP. Try again.' };
+        }
+
+        if (!result.success) {
+          return { success: false, message: result.message };
+        }
+
+        if (!result.sessionId || !result.profile) {
+          return { success: false, message: 'Login failed. Please request a new OTP.' };
+        }
+
+        await persistSession(result.sessionId, result.profile);
+        return { success: true, message: result.message };
+      }
+
+      if (!verifyOtpLocally(otp)) {
+        return { success: false, message: 'Invalid OTP. Please try again.' };
+      }
+
+      const profile: UserProfile = {
         phone: normalizedPhone,
         name: isSameUser ? user?.name ?? '' : '',
         addressLine: isSameUser ? user?.addressLine : undefined,
@@ -95,22 +147,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: isSameUser ? user?.id : undefined,
       };
 
-      if (isSupabaseConfigured()) {
-        const remote = await upsertProfileInDb(profile);
-        if (remote) {
-          profile = remote;
-        }
-      }
-
-      await persistUser(profile);
+      await persistSession(null, profile);
       return { success: true, message: 'Logged in successfully.' };
     },
-    [persistUser, user],
+    [persistSession, user],
   );
 
-  const logout = useCallback(async () => {
-    await persistUser(null);
-  }, [persistUser]);
+  const logout = useCallback(async (): Promise<{ success: boolean }> => {
+    const storedSessionId =
+      sessionId ?? (await AsyncStorage.getItem(SESSION_STORAGE_KEY));
+
+    let revoked = true;
+    if (storedSessionId && isSupabaseConfigured()) {
+      revoked = await revokeSessionInDb(storedSessionId);
+    }
+
+    setSessionId(null);
+    setUser(null);
+    await clearStoredAuth();
+
+    return { success: revoked };
+  }, [sessionId]);
 
   const updateProfile = useCallback(
     async (updates: UserProfileUpdate) => {
@@ -131,9 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      await persistUser(updated);
+      await persistSession(sessionId, updated);
     },
-    [persistUser, user],
+    [persistSession, sessionId, user],
   );
 
   const value = useMemo(
@@ -141,12 +198,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isLoaded,
       isAuthenticated: Boolean(user),
-      sendOtp,
+      sendOtp: sendOtpHandler,
       verifyOtp,
       logout,
       updateProfile,
     }),
-    [user, isLoaded, sendOtp, verifyOtp, logout, updateProfile],
+    [user, isLoaded, sendOtpHandler, verifyOtp, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

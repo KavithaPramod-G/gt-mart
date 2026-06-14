@@ -21,6 +21,7 @@ function isValidSupabaseUrl(url: string): boolean {
 export const env = {
   supabaseUrl: stripEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL),
   supabaseAnonKey: stripEnvValue(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
+  otpDevMode: stripEnvValue(process.env.EXPO_PUBLIC_OTP_DEV_MODE).toLowerCase() === 'true',
 };
 
 export function isSupabaseConfigured(): boolean {
@@ -29,6 +30,10 @@ export function isSupabaseConfigured(): boolean {
       env.supabaseAnonKey &&
       isValidSupabaseUrl(env.supabaseUrl),
   );
+}
+
+export function isOtpDevMode(): boolean {
+  return env.otpDevMode;
 }
 
 export function getSupabaseConfigError(): string | null {

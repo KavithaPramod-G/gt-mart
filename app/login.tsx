@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { DEV_MOCK_OTP } from '@/constants/config';
+import { isOtpDevMode } from '@/lib/env';
 import { useAuth } from '@/context/AuthContext';
-import { isValidIndianMobile } from '@/services/auth';
+import { formatPhoneDisplay, isValidIndianMobile } from '@/services/auth';
 
 type LoginStep = 'phone' | 'otp';
+
+const OTP_RESEND_SECONDS = 60;
 
 export default function LoginScreen() {
   const { sendOtp, verifyOtp } = useAuth();
@@ -23,6 +25,18 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+
+    const timer = setInterval(() => {
+      setResendSeconds((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendSeconds]);
 
   const handleSendOtp = async () => {
     if (!isValidIndianMobile(phone)) {
@@ -35,6 +49,9 @@ export default function LoginScreen() {
       const result = await sendOtp(phone);
       if (result.success) {
         setStep('otp');
+        setOtp('');
+        setDevOtpHint(result.devOtp ?? null);
+        setResendSeconds(OTP_RESEND_SECONDS);
         Alert.alert('OTP sent', result.message);
       } else {
         Alert.alert('Could not send OTP', result.message);
@@ -45,7 +62,7 @@ export default function LoginScreen() {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.trim().length < 4) {
+    if (otp.trim().length !== 6) {
       Alert.alert('Invalid OTP', 'Enter the 6-digit OTP.');
       return;
     }
@@ -101,7 +118,9 @@ export default function LoginScreen() {
         ) : (
           <View className="rounded-2xl border border-border bg-surface p-4">
             <Text className="mb-1 text-base font-bold text-foreground">Enter OTP</Text>
-            <Text className="mb-4 text-sm text-muted">Sent to {phone}</Text>
+            <Text className="mb-4 text-sm text-muted">
+              Sent to {formatPhoneDisplay(phone)}
+            </Text>
             <TextInput
               placeholder="6-digit OTP"
               keyboardType="number-pad"
@@ -110,12 +129,25 @@ export default function LoginScreen() {
               maxLength={6}
               className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
             />
-            <Text className="text-sm text-muted">Dev OTP: {DEV_MOCK_OTP}</Text>
+            {isOtpDevMode() && devOtpHint ? (
+              <Text className="text-sm text-muted">Dev OTP: {devOtpHint}</Text>
+            ) : (
+              <Text className="text-sm text-muted">OTP expires in 5 minutes.</Text>
+            )}
             <Button
               label="Verify & Login"
               loading={loading}
               className="mt-4"
               onPress={handleVerifyOtp}
+            />
+            <Button
+              label={
+                resendSeconds > 0 ? `Resend OTP (${resendSeconds}s)` : 'Resend OTP'
+              }
+              variant="outline"
+              className="mt-2"
+              disabled={resendSeconds > 0 || loading}
+              onPress={handleSendOtp}
             />
             <Button
               label="Change number"
@@ -124,6 +156,8 @@ export default function LoginScreen() {
               onPress={() => {
                 setStep('phone');
                 setOtp('');
+                setDevOtpHint(null);
+                setResendSeconds(0);
               }}
             />
           </View>

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, ScrollView, Switch, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -8,9 +9,11 @@ import { SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { formatPhoneDisplay } from '@/services/auth';
 import { openWhatsApp } from '@/services/whatsapp';
+import { confirmAction } from '@/utils/confirm';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated, logout, updateProfile } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   if (!isAuthenticated || !user) {
     return (
@@ -35,17 +38,23 @@ export default function ProfileScreen() {
     );
   }
 
-  const handleLogout = () => {
-    Alert.alert('Log out?', 'You can login again anytime with your mobile number.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    const confirmed = await confirmAction(
+      'Log out?',
+      'You will need OTP to sign in again. Your cart stays saved.',
+      'Log out',
+    );
+
+    if (!confirmed) return;
+
+    setLoggingOut(true);
+    try {
+      await logout();
+    } catch {
+      Alert.alert('Log out failed', 'Please try again.');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const handleSupport = async () => {
@@ -112,8 +121,9 @@ export default function ProfileScreen() {
         />
         <ProfileMenuItem
           icon="log-out-outline"
-          label="Log out"
-          onPress={handleLogout}
+          label={loggingOut ? 'Logging out…' : 'Log out'}
+          subtitle="End session on this device"
+          onPress={loggingOut ? undefined : handleLogout}
           destructive
           showChevron={false}
         />

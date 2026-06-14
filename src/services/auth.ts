@@ -3,6 +3,8 @@ import {
   MIN_PHONE_LENGTH,
   PHONE_COUNTRY_CODE,
 } from '@/constants/config';
+import { isSupabaseConfigured } from '@/lib/env';
+import { requestOtpFromDb } from '@/services/api/authApi';
 
 export function normalizePhone(input: string): string {
   const digits = input.replace(/\D/g, '');
@@ -46,17 +48,30 @@ export function isValidIndianMobile(input: string): boolean {
   return false;
 }
 
-export async function sendOtpMock(phone: string): Promise<{ success: boolean; message: string }> {
+export async function sendOtp(phone: string): Promise<{
+  success: boolean;
+  message: string;
+  expiresInSeconds?: number;
+  devOtp?: string;
+}> {
   if (!isValidIndianMobile(phone)) {
     return { success: false, message: 'Enter a valid 10-digit mobile number.' };
+  }
+
+  if (isSupabaseConfigured()) {
+    const result = await requestOtpFromDb(phone);
+    if (result) {
+      return result;
+    }
   }
 
   return {
     success: true,
     message: `OTP sent to ${formatPhoneDisplay(normalizePhone(phone))}. Dev OTP: ${DEV_MOCK_OTP}`,
+    devOtp: DEV_MOCK_OTP,
   };
 }
 
-export function verifyOtpMock(otp: string): boolean {
+export function verifyOtpLocally(otp: string): boolean {
   return otp.trim() === DEV_MOCK_OTP;
 }

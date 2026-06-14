@@ -16,6 +16,7 @@ In the Supabase dashboard: **SQL Editor** → **New query**
 
 1. Paste and run `supabase/migrations/001_initial_schema.sql`
 2. Paste and run `supabase/seed.sql`
+3. Run remaining migrations (`002`–`005`) for admin login and customer OTP auth
 
 ### 3. Connect the mobile app
 
@@ -37,6 +38,8 @@ Without `.env`, the app uses **local mock data** (same as before).
 | Table | Purpose |
 |-------|---------|
 | `profiles` | Customer accounts (phone, name, address) |
+| `otp_verifications` | Mobile OTP codes (hashed, expiring) |
+| `customer_sessions` | Active login sessions |
 | `categories` | Product categories |
 | `products` | Grocery catalog |
 | `orders` | Orders (COD, status, delivery info) |
@@ -48,6 +51,10 @@ Without `.env`, the app uses **local mock data** (same as before).
 | Function | Purpose |
 |----------|---------|
 | `upsert_profile` | Create/update profile by phone |
+| `request_customer_otp` | Generate OTP for mobile login |
+| `verify_customer_otp` | Validate OTP and create session |
+| `validate_customer_session` | Restore login on app open |
+| `revoke_customer_session` | Log out |
 | `place_order` | Create order + items + first notification |
 | `update_order_status` | Advance order status |
 | `generate_order_number` | `GT-YYYYMMDD-0001` format |

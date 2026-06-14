@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -78,6 +79,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     refreshOrders().finally(() => setIsLoaded(true));
   }, [authLoaded, refreshOrders]);
+
+  const prevUserRef = useRef(user);
+
+  useEffect(() => {
+    if (!authLoaded) return;
+
+    const wasLoggedIn = Boolean(prevUserRef.current);
+    const isLoggedIn = Boolean(user);
+
+    if (wasLoggedIn && !isLoggedIn) {
+      setOrders([]);
+      AsyncStorage.removeItem(ORDERS_STORAGE_KEY);
+    }
+
+    prevUserRef.current = user;
+  }, [authLoaded, user]);
 
   useEffect(() => {
     if (!isLoaded || isSupabaseConfigured()) return;
