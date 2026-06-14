@@ -1,5 +1,5 @@
 /** Replace with your shop's WhatsApp number (country code, no + or spaces). Example: 919876543210 */
-export const SHOP_WHATSAPP_NUMBER = '918015558131';
+export const SHOP_WHATSAPP_NUMBER = '919705074739';
 
 export const SHOP_NAME = 'GT Mart';
 export const SHOP_TAGLINE = 'Fresh groceries, delivered locally';
@@ -17,3 +17,8 @@ export const ORDER_STATUS_LABELS: Record<
   out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
 };
+
+/** Mock OTP for development — replace with real SMS provider in production */
+export const DEV_MOCK_OTP = '123456';
+export const PHONE_COUNTRY_CODE = '91';
+export const MIN_PHONE_LENGTH = 10;

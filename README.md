@@ -18,8 +18,36 @@ React Native mobile app for **GT Mart**, a local grocery shop with basic shoppin
 - React Native
 - TypeScript
 - **NativeWind** (Tailwind CSS utility classes)
+- **Supabase** (PostgreSQL backend + API)
 - Expo Router (file-based navigation)
-- AsyncStorage for cart and order persistence
+- AsyncStorage for cart cache and offline fallback
+
+## Backend & database (Supabase)
+
+The app supports **Supabase** as the backend. Without configuration it uses local mock data.
+
+### Setup
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run SQL from `supabase/migrations/001_initial_schema.sql` then `supabase/seed.sql`
+3. Copy `.env.example` → `.env` and add your URL + anon key:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+4. Restart Expo: `npx expo start --clear`
+
+See `supabase/README.md` for full details.
+
+### What syncs to the database
+
+| Data | When |
+|------|------|
+| Products | Loaded on app start |
+| Profile | Login + profile edit |
+| Orders | Place order + status updates |
 
 ## Styling
 
@@ -39,9 +67,9 @@ Brand colors are defined in `tailwind.config.js` (`primary`, `primary-light`, `w
 |-------|---------|-----|
 | **Now** | NativeWind | Tailwind styling (installed) |
 | **Now** | AsyncStorage | Cart/order persistence (installed) |
-| **Soon** | **Zustand** or **TanStack Query** | Cleaner state + API calls when you add a backend |
+| **Now** | **Supabase** | Products, orders, profiles (integrated) |
 | **Soon** | **React Hook Form** + **Zod** | Checkout/delivery form validation |
-| **Soon** | **Supabase** or **Firebase** | Products, orders, admin panel, auth |
+| **Soon** | Supabase Phone Auth | Replace mock OTP |
 | **Later** | **WhatsApp Business API** (via Twilio/Meta) | Automatic order notifications without opening WhatsApp |
 | **Later** | **Expo Notifications** | Push alerts for delivery status |
 | **Optional** | **FlashList** | Faster product lists at scale |

@@ -66,3 +66,17 @@ export interface WhatsAppNotification {
   sentAt: string;
   message: string;
 }
+
+export interface UserProfile {
+  id?: string;
+  phone: string;
+  name: string;
+  addressLine?: string;
+  landmark?: string;
+  whatsappUpdatesEnabled: boolean;
+  createdAt: string;
+}
+
+export type UserProfileUpdate = Partial<
+  Pick<UserProfile, 'name' | 'addressLine' | 'landmark' | 'whatsappUpdatesEnabled'>
+>;

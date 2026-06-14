@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -17,13 +17,16 @@ import {
   MIN_ORDER_AMOUNT,
   SHOP_NAME,
 } from '@/constants/config';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
+import { formatPhoneDisplay } from '@/services/auth';
 import { DeliveryAddress } from '@/types';
 
 export default function CheckoutScreen() {
   const { items, subtotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
+  const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<DeliveryAddress>({
     name: '',
@@ -31,6 +34,20 @@ export default function CheckoutScreen() {
     addressLine: '',
     landmark: '',
   });
+
+  useEffect(() => {
+    if (!user) return;
+
+    const localPhone =
+      user.phone.length > 10 ? user.phone.slice(-10) : user.phone;
+
+    setForm((current) => ({
+      name: current.name || user.name || '',
+      phone: current.phone || localPhone,
+      addressLine: current.addressLine || user.addressLine || '',
+      landmark: current.landmark || user.landmark || '',
+    }));
+  }, [user]);
 
   const total = subtotal + DELIVERY_FEE;
   const isValid =
@@ -70,7 +87,29 @@ export default function CheckoutScreen() {
       className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerClassName="p-4 pb-8">
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        {isAuthenticated && user ? (
+          <View className="mb-4 rounded-xl border border-[#B8E6C8] bg-[#E8F8EE] p-4">
+            <Text className="text-sm font-semibold text-primary">Logged in</Text>
+            <Text className="mt-1 text-sm text-muted">
+              Using {formatPhoneDisplay(user.phone)} for this order and WhatsApp updates.
+            </Text>
+          </View>
+        ) : (
+          <View className="mb-4 rounded-xl border border-border bg-surface p-4">
+            <Text className="text-sm text-muted">
+              Guest checkout — or{' '}
+              <Text
+                className="font-semibold text-primary"
+                onPress={() => router.push('/login')}
+              >
+                login with mobile
+              </Text>{' '}
+              to save your details.
+            </Text>
+          </View>
+        )}
+
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
           <Text className="mb-4 text-base font-bold text-foreground">Delivery details</Text>
           <TextInput

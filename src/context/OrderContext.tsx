@@ -10,12 +10,20 @@ import {
 } from 'react';
 
 import { DELIVERY_FEE } from '@/constants/config';
+import { useAuth } from '@/context/AuthContext';
+import { isSupabaseConfigured } from '@/lib/env';
+import {
+  fetchOrdersByPhone,
+  placeOrderInDb,
+  updateOrderStatusInDb,
+} from '@/services/api/ordersApi';
 import { generateOrderNumber, getNextSequenceFromOrders } from '@/services/orderNumber';
 import {
   buildStatusUpdateMessage,
   notifyCustomerStatusUpdate,
   notifyShopNewOrder,
 } from '@/services/whatsapp';
+import { normalizePhone } from '@/services/auth';
 import { CartItem, DeliveryAddress, Order, OrderStatus } from '@/types';
 
 const ORDERS_STORAGE_KEY = '@gt_mart_orders';
@@ -28,6 +36,10 @@ const STATUS_FLOW: OrderStatus[] = [
   'delivered',
 ];
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f-]{36}$/i.test(value);
+}
+
 interface OrderContextValue {
   orders: Order[];
   isLoaded: boolean;
@@ -35,26 +47,40 @@ interface OrderContextValue {
   getOrder: (id: string) => Order | undefined;
   advanceOrderStatus: (orderId: string) => Promise<Order | undefined>;
   sendWhatsAppUpdate: (orderId: string, status?: OrderStatus) => Promise<boolean>;
+  refreshOrders: () => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextValue | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
+  const { user, isLoaded: authLoaded } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    AsyncStorage.getItem(ORDERS_STORAGE_KEY)
-      .then((stored) => {
-        if (stored) {
-          setOrders(JSON.parse(stored) as Order[]);
-        }
-      })
-      .finally(() => setIsLoaded(true));
-  }, []);
+  const refreshOrders = useCallback(async () => {
+    if (isSupabaseConfigured() && user?.phone) {
+      const remote = await fetchOrdersByPhone(user.phone);
+      if (remote) {
+        setOrders(remote);
+        await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(remote));
+        return;
+      }
+    }
+
+    const stored = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+    if (stored) {
+      setOrders(JSON.parse(stored) as Order[]);
+    }
+  }, [user?.phone]);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!authLoaded) return;
+
+    refreshOrders().finally(() => setIsLoaded(true));
+  }, [authLoaded, refreshOrders]);
+
+  useEffect(() => {
+    if (!isLoaded || isSupabaseConfigured()) return;
     AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
   }, [orders, isLoaded]);
 
@@ -63,8 +89,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     [orders],
   );
 
-  const placeOrder = useCallback(
-    async (items: CartItem[], address: DeliveryAddress): Promise<Order> => {
+  const placeOrderLocal = useCallback(
+    (items: CartItem[], address: DeliveryAddress): Order => {
       const subtotal = items.reduce(
         (total, item) => total + item.product.price * item.quantity,
         0,
@@ -73,6 +99,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         getNextSequenceFromOrders(orders.map((order) => order.orderNumber)),
       );
       const now = new Date().toISOString();
+      const normalizedAddress = {
+        ...address,
+        phone: normalizePhone(address.phone),
+      };
 
       const order: Order = {
         id: `${Date.now()}`,
@@ -88,7 +118,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         deliveryFee: DELIVERY_FEE,
         total: subtotal + DELIVERY_FEE,
         paymentMethod: 'cod',
-        address,
+        address: normalizedAddress,
         status: 'placed',
         createdAt: now,
         updatedAt: now,
@@ -105,7 +135,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 deliveryFee: DELIVERY_FEE,
                 total: subtotal + DELIVERY_FEE,
                 paymentMethod: 'cod',
-                address,
+                address: normalizedAddress,
                 status: 'placed',
                 createdAt: now,
                 updatedAt: now,
@@ -117,55 +147,88 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         ],
       };
 
-      setOrders((current) => [order, ...current]);
-      await notifyShopNewOrder(order);
-
       return order;
     },
     [orders],
   );
 
+  const placeOrder = useCallback(
+    async (items: CartItem[], address: DeliveryAddress): Promise<Order> => {
+      let order: Order | null = null;
+
+      if (isSupabaseConfigured()) {
+        order = await placeOrderInDb(items, address, user?.id);
+      }
+
+      if (!order) {
+        order = placeOrderLocal(items, address);
+        setOrders((current) => [order!, ...current]);
+        if (!isSupabaseConfigured()) {
+          await AsyncStorage.setItem(
+            ORDERS_STORAGE_KEY,
+            JSON.stringify([order, ...orders]),
+          );
+        }
+      } else {
+        setOrders((current) => [order!, ...current]);
+        await AsyncStorage.setItem(
+          ORDERS_STORAGE_KEY,
+          JSON.stringify([order, ...orders.filter((o) => o.id !== order!.id)]),
+        );
+      }
+
+      await notifyShopNewOrder(order);
+      return order;
+    },
+    [placeOrderLocal, orders, user?.id],
+  );
+
   const advanceOrderStatus = useCallback(
     async (orderId: string): Promise<Order | undefined> => {
+      const existing = orders.find((order) => order.id === orderId);
+      if (!existing) return undefined;
+
+      const currentIndex = STATUS_FLOW.indexOf(existing.status);
+      if (currentIndex === -1 || currentIndex >= STATUS_FLOW.length - 1) {
+        return existing;
+      }
+
+      const nextStatus = STATUS_FLOW[currentIndex + 1];
+      const message = buildStatusUpdateMessage(existing, nextStatus);
+
       let updatedOrder: Order | undefined;
 
+      if (isSupabaseConfigured() && isUuid(orderId)) {
+        const remote = await updateOrderStatusInDb(orderId, nextStatus, message);
+        if (remote) {
+          updatedOrder = remote;
+        }
+      }
+
+      if (!updatedOrder) {
+        const now = new Date().toISOString();
+        updatedOrder = {
+          ...existing,
+          status: nextStatus,
+          updatedAt: now,
+          whatsappNotifications: [
+            ...existing.whatsappNotifications,
+            { status: nextStatus, sentAt: now, message },
+          ],
+        };
+      }
+
       setOrders((current) =>
-        current.map((order) => {
-          if (order.id !== orderId) return order;
-
-          const currentIndex = STATUS_FLOW.indexOf(order.status);
-          if (currentIndex === -1 || currentIndex >= STATUS_FLOW.length - 1) {
-            updatedOrder = order;
-            return order;
-          }
-
-          const nextStatus = STATUS_FLOW[currentIndex + 1];
-          const now = new Date().toISOString();
-          updatedOrder = {
-            ...order,
-            status: nextStatus,
-            updatedAt: now,
-            whatsappNotifications: [
-              ...order.whatsappNotifications,
-              {
-                status: nextStatus,
-                sentAt: now,
-                message: buildStatusUpdateMessage(order, nextStatus),
-              },
-            ],
-          };
-
-          return updatedOrder;
-        }),
+        current.map((order) => (order.id === orderId ? updatedOrder! : order)),
       );
 
-      if (updatedOrder && updatedOrder.status !== 'placed') {
-        await notifyCustomerStatusUpdate(updatedOrder, updatedOrder.status);
+      if (nextStatus !== 'placed') {
+        await notifyCustomerStatusUpdate(updatedOrder, nextStatus);
       }
 
       return updatedOrder;
     },
-    [],
+    [orders],
   );
 
   const sendWhatsAppUpdate = useCallback(
@@ -187,8 +250,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       getOrder,
       advanceOrderStatus,
       sendWhatsAppUpdate,
+      refreshOrders,
     }),
-    [orders, isLoaded, placeOrder, getOrder, advanceOrderStatus, sendWhatsAppUpdate],
+    [
+      orders,
+      isLoaded,
+      placeOrder,
+      getOrder,
+      advanceOrderStatus,
+      sendWhatsAppUpdate,
+      refreshOrders,
+    ],
   );
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;

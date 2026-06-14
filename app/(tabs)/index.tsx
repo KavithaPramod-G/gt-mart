@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { ProductCard } from '@/components/ProductCard';
 import { SHOP_TAGLINE } from '@/constants/config';
-import { products } from '@/data/products';
+import { useProducts } from '@/context/ProductsContext';
 import { ProductCategory } from '@/types';
 
 export default function ShopScreen() {
   const insets = useSafeAreaInsets();
+  const { products, isLoading, source } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(
     'all',
   );
@@ -24,7 +25,7 @@ export default function ShopScreen() {
         .includes(searchQuery.trim().toLowerCase());
       return matchesCategory && matchesSearch && product.inStock;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery]);
 
   return (
     <View className="flex-1 bg-background">
@@ -41,22 +42,31 @@ export default function ShopScreen() {
           onChangeText={setSearchQuery}
           className="rounded-xl bg-surface px-4 py-2.5 text-[15px] text-foreground"
         />
+        {source === 'database' ? (
+          <Text className="mt-2 text-xs text-primary-light">Live catalog from database</Text>
+        ) : null}
       </View>
 
       <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
 
-      <FlatList
-        className="flex-1"
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        renderItem={({ item }) => <ProductCard product={item} />}
-        ListEmptyComponent={
-          <View className="items-center p-8">
-            <Text className="text-[15px] text-muted">No products found.</Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#1B7A4E" />
+        </View>
+      ) : (
+        <FlatList
+          className="flex-1"
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+          renderItem={({ item }) => <ProductCard product={item} />}
+          ListEmptyComponent={
+            <View className="items-center p-8">
+              <Text className="text-[15px] text-muted">No products found.</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
