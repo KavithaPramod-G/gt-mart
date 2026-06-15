@@ -10,6 +10,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  mrp: number;
   price: number;
   unit: string;
   category: ProductCategory;

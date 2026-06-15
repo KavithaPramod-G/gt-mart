@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { CURRENCY } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
+import { ProductPrice } from '@/components/ProductPrice';
 import { CartItem } from '@/types';
 
 interface CartItemRowProps {
@@ -19,11 +20,9 @@ export function CartItemRow({ item }: CartItemRowProps) {
 
       <View className="flex-1">
         <Text className="text-base font-semibold text-foreground">{item.product.name}</Text>
-        <Text className="mt-0.5 text-[13px] text-muted">
-          {CURRENCY}
-          {item.product.price} / {item.product.unit}
-        </Text>
-        <Text className="mt-1 text-[15px] font-bold text-primary">
+        <ProductPrice mrp={item.product.mrp} price={item.product.price} size="sm" />
+        <Text className="mt-1 text-[13px] text-muted">Per {item.product.unit}</Text>
+        <Text className="mt-0.5 text-[15px] font-bold text-primary">
           {CURRENCY}
           {item.product.price * item.quantity}
         </Text>

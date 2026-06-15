@@ -30,6 +30,12 @@ export default function ProfileScreen() {
 
         <View className="p-4">
           <Button label="Login with mobile number" onPress={() => router.push('/login')} />
+          <Button
+            label="Preview category layouts"
+            variant="secondary"
+            onPress={() => router.push('/category-designs')}
+            className="mt-3"
+          />
           <Text className="mt-4 text-center text-sm text-muted">
             You can still browse and checkout as a guest without logging in.
           </Text>
@@ -112,6 +118,12 @@ export default function ProfileScreen() {
           label="Default address"
           subtitle={user.addressLine?.trim() || 'Add address for faster checkout'}
           onPress={() => router.push('/edit-profile')}
+        />
+        <ProfileMenuItem
+          icon="grid-outline"
+          label="Category layout previews"
+          subtitle="Compare Amazon-style home screen options"
+          onPress={() => router.push('/category-designs')}
         />
         <ProfileMenuItem
           icon="help-circle-outline"

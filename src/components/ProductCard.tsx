@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { CURRENCY } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
+import { ProductPrice } from '@/components/ProductPrice';
 import { Product } from '@/types';
 
 interface ProductCardProps {
@@ -27,10 +27,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
           {product.name}
         </Text>
         <Text className="mt-0.5 text-[13px] text-muted">Per {product.unit}</Text>
-        <Text className="mt-1 text-[15px] font-bold text-primary">
-          {CURRENCY}
-          {product.price}
-        </Text>
+        <ProductPrice mrp={product.mrp} price={product.price} />
       </View>
 
       {quantity === 0 ? (

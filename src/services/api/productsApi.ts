@@ -3,9 +3,10 @@ import { Product, ProductCategory } from '@/types';
 
 interface DbProduct {
   id: string;
-  legacy_id: string | null;
-  name: string;
+  item_id: string | null;
+  item_name: string;
   description: string;
+  mrp: number;
   price: number;
   unit: string;
   category_id: string;
@@ -15,9 +16,10 @@ interface DbProduct {
 
 function mapProduct(row: DbProduct): Product {
   return {
-    id: row.legacy_id ?? row.id,
-    name: row.name,
+    id: row.item_id ?? row.id,
+    name: row.item_name,
     description: row.description,
+    mrp: Number(row.mrp ?? row.price),
     price: Number(row.price),
     unit: row.unit,
     category: row.category_id as ProductCategory,
@@ -32,9 +34,9 @@ export async function fetchProductsFromDb(): Promise<Product[] | null> {
 
   const { data, error } = await supabase
     .from('products')
-    .select('id, legacy_id, name, description, price, unit, category_id, emoji, in_stock')
+    .select('id, item_id, item_name, description, mrp, price, unit, category_id, emoji, in_stock')
     .eq('in_stock', true)
-    .order('name');
+    .order('item_name');
 
   if (error || !data) {
     console.warn('[productsApi] fetch failed:', error?.message);
@@ -48,7 +50,6 @@ export function getDbProductId(productId: string): string | null {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  // If productId is already a UUID, use it; otherwise it's legacy_id
   if (/^[0-9a-f-]{36}$/i.test(productId)) {
     return productId;
   }

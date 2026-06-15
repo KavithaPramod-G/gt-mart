@@ -44,6 +44,14 @@ export default function RootLayout() {
                   name="order/[id]"
                   options={{ title: 'Order Details' }}
                 />
+                <Stack.Screen
+                  name="category/[id]"
+                  options={{ title: 'Products' }}
+                />
+                <Stack.Screen
+                  name="category-designs"
+                  options={{ title: 'Category Layouts' }}
+                />
               </Stack>
             </OrderProvider>
           </CartProvider>

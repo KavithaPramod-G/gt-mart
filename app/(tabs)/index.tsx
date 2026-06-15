@@ -1,31 +1,29 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CategoryFilter } from '@/components/CategoryFilter';
+import { CategoryHeroCards } from '@/components/CategoryHeroCards';
 import { ProductCard } from '@/components/ProductCard';
 import { SHOP_TAGLINE } from '@/constants/config';
 import { useProducts } from '@/context/ProductsContext';
-import { ProductCategory } from '@/types';
 
 export default function ShopScreen() {
   const insets = useSafeAreaInsets();
   const { products, isLoading, source } = useProducts();
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>(
-    'all',
-  );
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesCategory =
-        selectedCategory === 'all' || product.category === selectedCategory;
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(searchQuery.trim().toLowerCase());
-      return matchesCategory && matchesSearch && product.inStock;
-    });
-  }, [products, selectedCategory, searchQuery]);
+  const trimmedSearch = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
+
+  const searchResults = useMemo(() => {
+    if (!trimmedSearch) return [];
+
+    return products.filter(
+      (product) =>
+        product.inStock && product.name.toLowerCase().includes(trimmedSearch),
+    );
+  }, [products, trimmedSearch]);
+
+  const isSearching = trimmedSearch.length > 0;
 
   return (
     <View className="flex-1 bg-background">
@@ -41,31 +39,35 @@ export default function ShopScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           className="rounded-xl bg-surface px-4 py-2.5 text-[15px] text-foreground"
+          returnKeyType="search"
+          clearButtonMode="while-editing"
         />
         {source === 'database' ? (
           <Text className="mt-2 text-xs text-primary-light">Live catalog from database</Text>
         ) : null}
       </View>
 
-      <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
-
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#1B7A4E" />
         </View>
       ) : (
-        <FlatList
-          className="flex-1"
-          data={filteredProducts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          renderItem={({ item }) => <ProductCard product={item} />}
-          ListEmptyComponent={
-            <View className="items-center p-8">
-              <Text className="text-[15px] text-muted">No products found.</Text>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
+          {!isSearching ? <CategoryHeroCards /> : null}
+
+          {isSearching ? (
+            <View className="px-4 pt-4">
+              <Text className="mb-3 text-base font-bold text-foreground">
+                {searchResults.length > 0
+                  ? `${searchResults.length} result${searchResults.length === 1 ? '' : 's'} for "${searchQuery.trim()}"`
+                  : `No results for "${searchQuery.trim()}"`}
+              </Text>
+              {searchResults.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </View>
-          }
-        />
+          ) : null}
+        </ScrollView>
       )}
     </View>
   );
