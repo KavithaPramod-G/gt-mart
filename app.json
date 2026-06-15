@@ -2,12 +2,15 @@
   "expo": {
     "name": "GT Mart",
     "slug": "gt-mart",
+    "owner": "gtmart-kvl",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "gtmart",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gtmart.app"
@@ -25,6 +28,12 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "55652b39-1ca5-4ff8-ac78-72959ef91598"
+      }
     }
   }
 }
