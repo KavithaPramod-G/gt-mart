@@ -11,7 +11,7 @@ import {
   WhatsAppNotification,
 } from '@/types';
 
-interface DbOrder {
+interface DbOrderPayload {
   id: string;
   order_number: string;
   profile_id: string | null;
@@ -26,82 +26,46 @@ interface DbOrder {
   status: OrderStatus;
   created_at: string;
   updated_at: string;
+  items: Array<{
+    product_legacy_id: string | null;
+    product_id: string | null;
+    name: string;
+    price: number;
+    quantity: number;
+    unit: string;
+  }>;
+  notifications: Array<{
+    status: OrderStatus;
+    message: string;
+    sent_at: string;
+  }>;
 }
 
-interface DbOrderItem {
-  product_legacy_id: string | null;
-  product_id: string | null;
-  name: string;
-  price: number;
-  quantity: number;
-  unit: string;
-}
-
-interface DbNotification {
-  status: OrderStatus;
-  message: string;
-  sent_at: string;
-}
-
-async function fetchOrderDetails(orderId: string): Promise<Order | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', orderId)
-    .single();
-
-  if (orderError || !order) return null;
-
-  const { data: items } = await supabase
-    .from('order_items')
-    .select('product_legacy_id, product_id, name, price, quantity, unit')
-    .eq('order_id', orderId);
-
-  const { data: notifications } = await supabase
-    .from('order_notifications')
-    .select('status, message, sent_at')
-    .eq('order_id', orderId)
-    .order('sent_at');
-
-  return mapDbOrderToAppOrder(
-    order as DbOrder,
-    (items as DbOrderItem[]) ?? [],
-    (notifications as DbNotification[]) ?? [],
-  );
-}
-
-function mapDbOrderToAppOrder(
-  order: DbOrder,
-  items: DbOrderItem[],
-  notifications: DbNotification[],
-): Order {
+function mapDbOrderPayload(payload: DbOrderPayload): Order {
   return {
-    id: order.id,
-    orderNumber: order.order_number,
-    items: items.map((item) => ({
+    id: payload.id,
+    orderNumber: payload.order_number,
+    items: payload.items.map((item) => ({
       productId: item.product_legacy_id ?? item.product_id ?? '',
       name: item.name,
       price: Number(item.price),
       quantity: item.quantity,
       unit: item.unit,
     })),
-    subtotal: Number(order.subtotal),
-    deliveryFee: Number(order.delivery_fee),
-    total: Number(order.total),
+    subtotal: Number(payload.subtotal),
+    deliveryFee: Number(payload.delivery_fee),
+    total: Number(payload.total),
     paymentMethod: 'cod',
     address: {
-      name: order.customer_name,
-      phone: order.customer_phone,
-      addressLine: order.address_line,
-      landmark: order.landmark ?? undefined,
+      name: payload.customer_name,
+      phone: payload.customer_phone,
+      addressLine: payload.address_line,
+      landmark: payload.landmark ?? undefined,
     },
-    status: order.status,
-    createdAt: order.created_at,
-    updatedAt: order.updated_at,
-    whatsappNotifications: notifications.map((n) => ({
+    status: payload.status,
+    createdAt: payload.created_at,
+    updatedAt: payload.updated_at,
+    whatsappNotifications: payload.notifications.map((n) => ({
       status: n.status,
       sentAt: n.sent_at,
       message: n.message,
@@ -175,69 +139,42 @@ export async function placeOrderInDb(
     return null;
   }
 
-  return fetchOrderDetails(orderId as string);
+  return fetchOrderByPhoneAndId(customerPhone, orderId as string);
 }
 
-export async function fetchOrdersByPhone(phone: string): Promise<Order[] | null> {
+export async function fetchOrdersBySession(sessionId: string): Promise<Order[] | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const normalized = normalizePhone(phone);
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('customer_phone', normalized)
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('get_customer_orders', {
+    p_session_id: sessionId,
+  });
 
-  if (error || !orders) {
+  if (error || !data) {
     console.warn('[ordersApi] fetch orders failed:', error?.message);
     return null;
   }
 
-  const result: Order[] = [];
-
-  for (const order of orders as DbOrder[]) {
-    const { data: items } = await supabase
-      .from('order_items')
-      .select('product_legacy_id, product_id, name, price, quantity, unit')
-      .eq('order_id', order.id);
-
-    const { data: notifications } = await supabase
-      .from('order_notifications')
-      .select('status, message, sent_at')
-      .eq('order_id', order.id)
-      .order('sent_at');
-
-    result.push(
-      mapDbOrderToAppOrder(
-        order,
-        (items as DbOrderItem[]) ?? [],
-        (notifications as DbNotification[]) ?? [],
-      ),
-    );
-  }
-
-  return result;
+  const rows = data as DbOrderPayload[];
+  return rows.map((row) => mapDbOrderPayload(row));
 }
 
-export async function updateOrderStatusInDb(
+export async function fetchOrderByPhoneAndId(
+  phone: string,
   orderId: string,
-  status: OrderStatus,
-  message: string,
 ): Promise<Order | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const { error } = await supabase.rpc('update_order_status', {
+  const { data, error } = await supabase.rpc('get_customer_order', {
+    p_phone: normalizePhone(phone),
     p_order_id: orderId,
-    p_status: status,
-    p_message: message,
   });
 
-  if (error) {
-    console.warn('[ordersApi] update status failed:', error?.message);
+  if (error || !data) {
+    console.warn('[ordersApi] fetch order failed:', error?.message);
     return null;
   }
 
-  return fetchOrderDetails(orderId);
+  return mapDbOrderPayload(data as DbOrderPayload);
 }

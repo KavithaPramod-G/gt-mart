@@ -5,6 +5,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
 import { CURRENCY, ORDER_STATUS_LABELS, SHOP_NAME } from '@/constants/config';
+import { isSupabaseConfigured } from '@/lib/env';
 import { useOrders } from '@/context/OrderContext';
 
 export default function OrderDetailScreen() {
@@ -100,7 +101,7 @@ export default function OrderDetailScreen() {
           variant="whatsapp"
           onPress={() => sendWhatsAppUpdate(order.id)}
         />
-        {canAdvance && (
+        {canAdvance && !isSupabaseConfigured() && (
           <Button
             label="Simulate next delivery step"
             variant="secondary"

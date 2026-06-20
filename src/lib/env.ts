@@ -22,6 +22,8 @@ export const env = {
   supabaseUrl: stripEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL),
   supabaseAnonKey: stripEnvValue(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
   otpDevMode: stripEnvValue(process.env.EXPO_PUBLIC_OTP_DEV_MODE).toLowerCase() === 'true',
+  phoneOnlyAuth:
+    stripEnvValue(process.env.EXPO_PUBLIC_PHONE_ONLY_AUTH).toLowerCase() === 'true',
 };
 
 export function isSupabaseConfigured(): boolean {
@@ -34,6 +36,10 @@ export function isSupabaseConfigured(): boolean {
 
 export function isOtpDevMode(): boolean {
   return env.otpDevMode;
+}
+
+export function isPhoneOnlyAuth(): boolean {
+  return env.phoneOnlyAuth;
 }
 
 export function getSupabaseConfigError(): string | null {

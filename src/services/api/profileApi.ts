@@ -2,7 +2,7 @@ import { getSupabase } from '@/lib/supabase';
 import { normalizePhone } from '@/services/auth';
 import { UserProfile, UserProfileUpdate } from '@/types';
 
-interface DbProfile {
+interface DbProfilePayload {
   id: string;
   phone: string;
   name: string;
@@ -10,10 +10,9 @@ interface DbProfile {
   landmark: string | null;
   whatsapp_updates_enabled: boolean;
   created_at: string;
-  updated_at: string;
 }
 
-export function mapDbProfile(row: DbProfile): UserProfile {
+export function mapDbProfile(row: DbProfilePayload): UserProfile {
   return {
     id: row.id,
     phone: row.phone,
@@ -25,59 +24,37 @@ export function mapDbProfile(row: DbProfile): UserProfile {
   };
 }
 
-export async function upsertProfileInDb(
-  profile: Pick<UserProfile, 'phone' | 'name' | 'addressLine' | 'landmark' | 'whatsappUpdatesEnabled'>,
-): Promise<UserProfile | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc('upsert_profile', {
-    p_phone: normalizePhone(profile.phone),
-    p_name: profile.name ?? '',
-    p_address_line: profile.addressLine ?? null,
-    p_landmark: profile.landmark ?? null,
-    p_whatsapp_updates_enabled: profile.whatsappUpdatesEnabled ?? true,
-  });
-
-  if (error || !data) {
-    console.warn('[profileApi] upsert failed:', error?.message);
-    return null;
-  }
-
-  return mapDbProfile(data as DbProfile);
-}
-
-export async function fetchProfileByPhone(phone: string): Promise<UserProfile | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const normalized = normalizePhone(phone);
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('phone', normalized)
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return mapDbProfile(data as DbProfile);
-}
-
 export async function syncProfileUpdateToDb(
-  phone: string,
+  sessionId: string,
   updates: UserProfileUpdate,
+  current: UserProfile,
 ): Promise<UserProfile | null> {
-  const existing = await fetchProfileByPhone(phone);
-  if (!existing) return null;
+  const supabase = getSupabase();
+  if (!supabase) return null;
 
-  return upsertProfileInDb({
-    phone: existing.phone,
-    name: updates.name ?? existing.name,
-    addressLine: updates.addressLine ?? existing.addressLine,
-    landmark: updates.landmark ?? existing.landmark,
-    whatsappUpdatesEnabled:
-      updates.whatsappUpdatesEnabled ?? existing.whatsappUpdatesEnabled,
+  const { data, error } = await supabase.rpc('update_customer_profile', {
+    p_session_id: sessionId,
+    p_name: updates.name ?? current.name,
+    p_address_line: updates.addressLine ?? current.addressLine ?? '',
+    p_landmark: updates.landmark ?? current.landmark ?? '',
+    p_whatsapp_updates_enabled:
+      updates.whatsappUpdatesEnabled ?? current.whatsappUpdatesEnabled,
   });
+
+  if (error || !data) {
+    console.warn('[profileApi] update failed:', error?.message);
+    return null;
+  }
+
+  const result = data as {
+    success: boolean;
+    profile?: DbProfilePayload;
+    message?: string;
+  };
+
+  if (!result.success || !result.profile) {
+    return null;
+  }
+
+  return mapDbProfile(result.profile);
 }

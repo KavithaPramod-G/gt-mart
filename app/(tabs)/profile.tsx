@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { ProfileMenuItem } from '@/components/ProfileMenuItem';
 import { SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
+import { isPhoneOnlyAuth } from '@/lib/env';
 import { formatPhoneDisplay } from '@/services/auth';
 import { openWhatsApp } from '@/services/whatsapp';
 import { confirmAction } from '@/utils/confirm';
@@ -47,7 +48,9 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     const confirmed = await confirmAction(
       'Log out?',
-      'You will need OTP to sign in again. Your cart stays saved.',
+      isPhoneOnlyAuth()
+        ? 'You will need your mobile number to sign in again. Your cart stays saved.'
+        : 'You will need OTP to sign in again. Your cart stays saved.',
       'Log out',
     );
 

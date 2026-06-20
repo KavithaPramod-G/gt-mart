@@ -9,13 +9,14 @@ import {
   useState,
 } from 'react';
 
-import { isSupabaseConfigured } from '@/lib/env';
+import { isPhoneOnlyAuth, isSupabaseConfigured } from '@/lib/env';
 import {
+  loginByPhoneFromDb,
   revokeSessionInDb,
   validateSessionFromDb,
   verifyOtpFromDb,
 } from '@/services/api/authApi';
-import { syncProfileUpdateToDb, upsertProfileInDb } from '@/services/api/profileApi';
+import { syncProfileUpdateToDb } from '@/services/api/profileApi';
 import { normalizePhone, sendOtp, verifyOtpLocally } from '@/services/auth';
 import { UserProfile, UserProfileUpdate } from '@/types';
 
@@ -24,6 +25,7 @@ const USER_STORAGE_KEY = '@gt_mart_user';
 
 interface AuthContextValue {
   user: UserProfile | null;
+  sessionId: string | null;
   isLoaded: boolean;
   isAuthenticated: boolean;
   sendOtp: (phone: string) => Promise<{
@@ -33,6 +35,7 @@ interface AuthContextValue {
     devOtp?: string;
   }>;
   verifyOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
+  loginWithPhone: (phone: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<{ success: boolean }>;
   updateProfile: (updates: UserProfileUpdate) => Promise<void>;
 }
@@ -109,6 +112,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return sendOtp(phone);
   }, []);
 
+  const loginWithPhone = useCallback(
+    async (phone: string) => {
+      const normalizedPhone = normalizePhone(phone);
+      const now = new Date().toISOString();
+      const isSameUser = user?.phone === normalizedPhone;
+
+      if (isSupabaseConfigured()) {
+        const result = await loginByPhoneFromDb(phone);
+        if (!result) {
+          return { success: false, message: 'Could not log in. Try again.' };
+        }
+
+        if (!result.success) {
+          return { success: false, message: result.message };
+        }
+
+        if (!result.sessionId || !result.profile) {
+          return { success: false, message: 'Login failed. Please try again.' };
+        }
+
+        await persistSession(result.sessionId, result.profile);
+        return { success: true, message: result.message };
+      }
+
+      const profile: UserProfile = {
+        phone: normalizedPhone,
+        name: isSameUser ? user?.name ?? '' : '',
+        addressLine: isSameUser ? user?.addressLine : undefined,
+        landmark: isSameUser ? user?.landmark : undefined,
+        whatsappUpdatesEnabled: isSameUser ? user?.whatsappUpdatesEnabled ?? true : true,
+        createdAt: isSameUser ? user?.createdAt ?? now : now,
+        id: isSameUser ? user?.id : undefined,
+      };
+
+      await persistSession(null, profile);
+      return { success: true, message: 'Logged in successfully.' };
+    },
+    [persistSession, user],
+  );
+
   const verifyOtp = useCallback(
     async (phone: string, otp: string) => {
       const normalizedPhone = normalizePhone(phone);
@@ -159,7 +202,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let revoked = true;
     if (storedSessionId && isSupabaseConfigured()) {
-      revoked = await revokeSessionInDb(storedSessionId);
+      const phoneForRevoke = user?.phone ?? (await AsyncStorage.getItem(USER_STORAGE_KEY));
+      let normalizedPhone = '';
+      if (phoneForRevoke) {
+        try {
+          const parsed = JSON.parse(phoneForRevoke) as UserProfile;
+          normalizedPhone = parsed.phone;
+        } catch {
+          normalizedPhone = phoneForRevoke;
+        }
+      }
+      revoked = await revokeSessionInDb(storedSessionId, normalizedPhone);
     }
 
     setSessionId(null);
@@ -181,8 +234,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         landmark: updates.landmark?.trim() ?? user.landmark,
       };
 
-      if (isSupabaseConfigured()) {
-        const remote = await syncProfileUpdateToDb(user.phone, updates);
+      if (isSupabaseConfigured() && sessionId) {
+        const remote = await syncProfileUpdateToDb(sessionId, updates, user);
         if (remote) {
           updated = remote;
         }
@@ -196,14 +249,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       user,
+      sessionId,
       isLoaded,
       isAuthenticated: Boolean(user),
       sendOtp: sendOtpHandler,
+      loginWithPhone,
       verifyOtp,
       logout,
       updateProfile,
     }),
-    [user, isLoaded, sendOtpHandler, verifyOtp, logout, updateProfile],
+    [user, sessionId, isLoaded, sendOtpHandler, loginWithPhone, verifyOtp, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,4 @@
 import { getSupabase } from '@/lib/supabase';
-import { isOtpDevMode } from '@/lib/env';
 import { normalizePhone } from '@/services/auth';
 import { UserProfile } from '@/types';
 
@@ -49,31 +48,66 @@ export async function requestOtpFromDb(phone: string): Promise<OtpRequestResult 
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.rpc('request_customer_otp', {
+  const { data, error } = await supabase.functions.invoke('send-customer-otp', {
+    body: { phone: normalizePhone(phone) },
+  });
+
+  if (error) {
+    console.warn('[authApi] send-customer-otp failed:', error.message);
+    return {
+      success: false,
+      message: error.message ?? 'Could not send OTP. Try again.',
+    };
+  }
+
+  const result = data as {
+    success?: boolean;
+    message?: string;
+    expires_in_seconds?: number;
+  } | null;
+
+  if (!result) {
+    return {
+      success: false,
+      message: 'Could not send OTP. Try again.',
+    };
+  }
+
+  return {
+    success: Boolean(result.success),
+    message: result.message ?? 'Could not send OTP. Try again.',
+    expiresInSeconds: result.expires_in_seconds,
+  };
+}
+
+export async function loginByPhoneFromDb(phone: string): Promise<OtpVerifyResult | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc('login_customer_by_phone', {
     p_phone: normalizePhone(phone),
-    p_dev_mode: isOtpDevMode(),
   });
 
   if (error || !data) {
-    console.warn('[authApi] request_otp failed:', error?.message);
+    console.warn('[authApi] login_by_phone failed:', error?.message);
     return {
       success: false,
-      message: error?.message ?? 'Could not send OTP. Try again.',
+      message: error?.message ?? 'Could not log in. Try again.',
     };
   }
 
   const result = data as {
     success: boolean;
     message: string;
-    expires_in_seconds?: number;
-    dev_otp?: string | null;
+    session_id?: string;
+    profile?: DbProfilePayload;
   };
 
   return {
     success: result.success,
     message: result.message,
-    expiresInSeconds: result.expires_in_seconds,
-    devOtp: result.dev_otp ?? undefined,
+    sessionId: result.session_id,
+    profile: result.profile ? mapProfilePayload(result.profile) : undefined,
   };
 }
 
@@ -140,12 +174,13 @@ export async function validateSessionFromDb(
   };
 }
 
-export async function revokeSessionInDb(sessionId: string): Promise<boolean> {
+export async function revokeSessionInDb(sessionId: string, phone: string): Promise<boolean> {
   const supabase = getSupabase();
   if (!supabase) return false;
 
   const { data, error } = await supabase.rpc('revoke_customer_session', {
     p_session_id: sessionId,
+    p_phone: normalizePhone(phone),
   });
 
   if (error) {

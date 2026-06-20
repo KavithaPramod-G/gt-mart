@@ -19,7 +19,8 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://lesiblcrpxfihahseotg.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HITaH72NpcfTiS_T9d9_7Q_tJuZ2u4w",
-        "EXPO_PUBLIC_OTP_DEV_MODE": "true"
+        "EXPO_PUBLIC_OTP_DEV_MODE": "false",
+        "EXPO_PUBLIC_PHONE_ONLY_AUTH": "true"
       }
     },
     "production": {

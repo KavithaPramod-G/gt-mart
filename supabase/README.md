@@ -16,7 +16,7 @@ In the Supabase dashboard: **SQL Editor** → **New query**
 
 1. Paste and run `supabase/migrations/001_initial_schema.sql`
 2. Paste and run `supabase/seed.sql`
-3. Run remaining migrations (`002`–`005`) for admin login and customer OTP auth
+3. Run remaining migrations (`002`–`010`) for admin login, customer auth, security, and phone-only launch mode.
 
 ### 3. Connect the mobile app
 
@@ -46,12 +46,78 @@ Without `.env`, the app uses **local mock data** (same as before).
 | `order_items` | Line items per order |
 | `order_notifications` | WhatsApp update log |
 
+## OTP SMS (real login)
+
+Production login sends a 6-digit OTP by SMS via a Supabase Edge Function.
+
+### 1. Run migration `009_otp_sms_integration.sql`
+
+This adds `store_customer_otp_hash` (service role only) and blocks the old public `request_customer_otp` RPC.
+
+### 2. Deploy the Edge Function
+
+```bash
+npm install -g supabase
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase functions deploy send-customer-otp
+```
+
+### 3. Set secrets (Supabase Dashboard → Edge Functions → send-customer-otp → Secrets)
+
+**Option A — MSG91 (recommended for India)**
+
+| Secret | Example |
+|--------|---------|
+| `SMS_PROVIDER` | `msg91` |
+| `MSG91_AUTH_KEY` | your MSG91 auth key |
+| `MSG91_TEMPLATE_ID` | DLT-approved OTP template ID |
+
+Create an OTP template in [MSG91](https://msg91.com/) with a `##OTP##` variable.
+
+**Option B — Twilio**
+
+| Secret | Example |
+|--------|---------|
+| `SMS_PROVIDER` | `twilio` |
+| `TWILIO_ACCOUNT_SID` | AC... |
+| `TWILIO_AUTH_TOKEN` | ... |
+| `TWILIO_PHONE_NUMBER` | +1... |
+
+**Option C — Log only (testing)**
+
+| Secret | Value |
+|--------|-------|
+| `SMS_PROVIDER` | `log` |
+
+OTP is written to function logs only (Supabase → Edge Functions → Logs). No SMS is sent.
+
+### 4. Mobile app
+
+The app calls `send-customer-otp` instead of `request_customer_otp`. Verification still uses `verify_customer_otp`.
+
+Local dev without Supabase still uses mock OTP `123456` from `config.ts`.
+
+### Phone-only auth (launch mode)
+
+Set in `.env` or EAS build env:
+
+```env
+EXPO_PUBLIC_PHONE_ONLY_AUTH=true
+```
+
+Login skips OTP — customer enters mobile number only. Run migration `010_phone_only_auth.sql`.
+
+When MSG91 is ready, set `EXPO_PUBLIC_PHONE_ONLY_AUTH=false` and rebuild.
+
 ## API functions (RPC)
 
 | Function | Purpose |
 |----------|---------|
 | `upsert_profile` | Create/update profile by phone |
-| `request_customer_otp` | Generate OTP for mobile login |
+| `request_customer_otp` | ~~Generate OTP~~ (use Edge Function `send-customer-otp`) |
+| `store_customer_otp_hash` | Store OTP hash (service role / Edge Function only) |
+| `login_customer_by_phone` | Launch login without OTP (phone number only) |
 | `verify_customer_otp` | Validate OTP and create session |
 | `validate_customer_session` | Restore login on app open |
 | `revoke_customer_session` | Log out |

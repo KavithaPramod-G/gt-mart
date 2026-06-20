@@ -14,9 +14,8 @@ import { DELIVERY_FEE } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/env';
 import {
-  fetchOrdersByPhone,
+  fetchOrdersBySession,
   placeOrderInDb,
-  updateOrderStatusInDb,
 } from '@/services/api/ordersApi';
 import { generateOrderNumber, getNextSequenceFromOrders } from '@/services/orderNumber';
 import {
@@ -54,13 +53,13 @@ interface OrderContextValue {
 const OrderContext = createContext<OrderContextValue | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const { user, isLoaded: authLoaded } = useAuth();
+  const { user, sessionId, isLoaded: authLoaded } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const refreshOrders = useCallback(async () => {
-    if (isSupabaseConfigured() && user?.phone) {
-      const remote = await fetchOrdersByPhone(user.phone);
+    if (isSupabaseConfigured() && sessionId) {
+      const remote = await fetchOrdersBySession(sessionId);
       if (remote) {
         setOrders(remote);
         await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(remote));
@@ -72,7 +71,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (stored) {
       setOrders(JSON.parse(stored) as Order[]);
     }
-  }, [user?.phone]);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -216,10 +215,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       let updatedOrder: Order | undefined;
 
       if (isSupabaseConfigured() && isUuid(orderId)) {
-        const remote = await updateOrderStatusInDb(orderId, nextStatus, message);
-        if (remote) {
-          updatedOrder = remote;
-        }
+        // Status updates are admin-only; keep local simulation for offline demo.
       }
 
       if (!updatedOrder) {

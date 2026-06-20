@@ -11,16 +11,17 @@ import {
 } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { isOtpDevMode } from '@/lib/env';
 import { useAuth } from '@/context/AuthContext';
+import { isOtpDevMode, isPhoneOnlyAuth } from '@/lib/env';
 import { formatPhoneDisplay, isValidIndianMobile } from '@/services/auth';
 
 type LoginStep = 'phone' | 'otp';
 
 const OTP_RESEND_SECONDS = 60;
+const phoneOnlyAuth = isPhoneOnlyAuth();
 
 export default function LoginScreen() {
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, verifyOtp, loginWithPhone } = useAuth();
   const [step, setStep] = useState<LoginStep>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -37,6 +38,25 @@ export default function LoginScreen() {
 
     return () => clearInterval(timer);
   }, [resendSeconds]);
+
+  const handlePhoneOnlyLogin = async () => {
+    if (!isValidIndianMobile(phone)) {
+      Alert.alert('Invalid number', 'Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await loginWithPhone(phone);
+      if (result.success) {
+        router.replace('/profile');
+      } else {
+        Alert.alert('Could not log in', result.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSendOtp = async () => {
     if (!isValidIndianMobile(phone)) {
@@ -89,12 +109,13 @@ export default function LoginScreen() {
         <View className="mb-6 rounded-2xl bg-primary p-6">
           <Text className="text-2xl font-extrabold text-white">Welcome to GT Mart</Text>
           <Text className="mt-2 text-sm leading-5 text-primary-light">
-            Login with your mobile number. The same number will be used for orders and
-            WhatsApp delivery updates.
+            {phoneOnlyAuth
+              ? 'Enter your mobile number to save details and view order history. We may call to confirm orders.'
+              : 'Login with your mobile number. The same number will be used for orders and WhatsApp delivery updates.'}
           </Text>
         </View>
 
-        {step === 'phone' ? (
+        {phoneOnlyAuth || step === 'phone' ? (
           <View className="rounded-2xl border border-border bg-surface p-4">
             <Text className="mb-4 text-base font-bold text-foreground">Mobile number</Text>
             <TextInput
@@ -106,13 +127,15 @@ export default function LoginScreen() {
               className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
             />
             <Text className="text-sm text-muted">
-              We will send a one-time password (OTP) to verify your number.
+              {phoneOnlyAuth
+                ? 'Your orders are linked to this number. GT Mart will verify orders by phone before delivery.'
+                : 'We will send a one-time password (OTP) to verify your number.'}
             </Text>
             <Button
-              label="Send OTP"
+              label={phoneOnlyAuth ? 'Continue' : 'Send OTP'}
               loading={loading}
               className="mt-4"
-              onPress={handleSendOtp}
+              onPress={phoneOnlyAuth ? handlePhoneOnlyLogin : handleSendOtp}
             />
           </View>
         ) : (
