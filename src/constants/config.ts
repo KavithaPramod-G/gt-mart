@@ -3,8 +3,8 @@ export const SHOP_WHATSAPP_NUMBER = '919705074739';
 
 export const SHOP_NAME = 'GT Mart';
 export const SHOP_TAGLINE = 'Fresh groceries, delivered locally';
-export const DELIVERY_FEE = 30;
-export const MIN_ORDER_AMOUNT = 100;
+export const DELIVERY_FEE = 0;
+export const MIN_ORDER_AMOUNT = 500;
 export const CURRENCY = '₹';
 
 export const ORDER_STATUS_LABELS: Record<
