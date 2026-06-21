@@ -1,10 +1,16 @@
 export type ProductCategory =
-  | 'vegetables'
-  | 'fruits'
-  | 'dairy'
-  | 'snacks'
-  | 'beverages'
-  | 'household';
+  | 'fruits-vegetables'
+  | 'dairy-eggs'
+  | 'staples-grains'
+  | 'oils-ghee'
+  | 'snacks-beverages'
+  | 'bakery'
+  | 'instant-foods'
+  | 'dry-fruits-nuts'
+  | 'personal-care'
+  | 'home-care'
+  | 'baby-care'
+  | 'pet-care';
 
 export interface Product {
   id: string;

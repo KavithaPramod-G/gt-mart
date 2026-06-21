@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { categoryLabels } from '@/data/products';
+import { getCategoryLabel, SHOP_CATEGORIES } from '@/constants/categoryMeta';
 import { ProductCategory } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -9,15 +9,7 @@ interface CategoryFilterProps {
   onSelect: (category: ProductCategory | 'all') => void;
 }
 
-const categories: Array<ProductCategory | 'all'> = [
-  'all',
-  'vegetables',
-  'fruits',
-  'dairy',
-  'snacks',
-  'beverages',
-  'household',
-];
+const categories: Array<ProductCategory | 'all'> = ['all', ...SHOP_CATEGORIES];
 
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
   return (
@@ -34,7 +26,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
       >
         {categories.map((category) => {
           const isSelected = selected === category;
-          const label = category === 'all' ? 'All' : categoryLabels[category];
+          const label = category === 'all' ? 'All' : getCategoryLabel(category);
 
           return (
             <Pressable
