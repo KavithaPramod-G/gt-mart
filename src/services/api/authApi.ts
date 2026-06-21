@@ -19,11 +19,12 @@ export interface OtpRequestResult {
   devOtp?: string;
 }
 
-export interface OtpVerifyResult {
+export interface AuthActionResult {
   success: boolean;
   message: string;
   sessionId?: string;
   profile?: UserProfile;
+  alreadyRegistered?: boolean;
 }
 
 export interface SessionValidationResult {
@@ -80,7 +81,7 @@ export async function requestOtpFromDb(phone: string): Promise<OtpRequestResult 
   };
 }
 
-export async function loginByPhoneFromDb(phone: string): Promise<OtpVerifyResult | null> {
+export async function loginByPhoneFromDb(phone: string): Promise<AuthActionResult | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -111,10 +112,108 @@ export async function loginByPhoneFromDb(phone: string): Promise<OtpVerifyResult
   };
 }
 
+export async function registerCustomerFromDb(
+  phone: string,
+  password: string,
+  name?: string,
+): Promise<AuthActionResult | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc('register_customer', {
+    p_phone: phone,
+    p_password: password,
+    p_name: name?.trim() ?? '',
+  });
+
+  if (data) {
+    return mapAuthActionResult(data);
+  }
+
+  if (error) {
+    console.warn('[authApi] register_customer failed:', error.message);
+    if (isDuplicateRegistrationError(error.message)) {
+      return duplicateRegistrationMessage();
+    }
+    return {
+      success: false,
+      message: error.message ?? 'Could not create account. Try again.',
+    };
+  }
+
+  return {
+    success: false,
+    message: 'Could not create account. Try again.',
+  };
+}
+
+export async function loginCustomerFromDb(
+  phone: string,
+  password: string,
+): Promise<AuthActionResult | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc('login_customer', {
+    p_phone: normalizePhone(phone),
+    p_password: password,
+  });
+
+  if (error || !data) {
+    console.warn('[authApi] login_customer failed:', error?.message);
+    return {
+      success: false,
+      message: error?.message ?? 'Could not log in. Try again.',
+    };
+  }
+
+  return mapAuthActionResult(data);
+}
+
+function mapAuthActionResult(data: unknown): AuthActionResult {
+  const result = data as {
+    success?: boolean;
+    message?: string;
+    session_id?: string;
+    profile?: DbProfilePayload;
+    already_registered?: boolean;
+  };
+
+  const message = result.message ?? 'Something went wrong. Try again.';
+  const alreadyRegistered =
+    Boolean(result.already_registered) ||
+    /already registered/i.test(message);
+
+  return {
+    success: Boolean(result.success),
+    message,
+    sessionId: result.session_id,
+    profile: result.profile ? mapProfilePayload(result.profile) : undefined,
+    alreadyRegistered,
+  };
+}
+
+function duplicateRegistrationMessage(): AuthActionResult {
+  return {
+    success: false,
+    alreadyRegistered: true,
+    message: 'This mobile number is already registered. Please log in.',
+  };
+}
+
+function isDuplicateRegistrationError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('duplicate key') ||
+    normalized.includes('profiles_phone') ||
+    normalized.includes('already registered')
+  );
+}
+
 export async function verifyOtpFromDb(
   phone: string,
   otp: string,
-): Promise<OtpVerifyResult | null> {
+): Promise<AuthActionResult | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 

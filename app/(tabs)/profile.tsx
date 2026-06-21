@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import { ProfileMenuItem } from '@/components/ProfileMenuItem';
 import { SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
-import { isPhoneOnlyAuth } from '@/lib/env';
+import { isPasswordAuth, isPhoneOnlyAuth } from '@/lib/env';
 import { formatPhoneDisplay } from '@/services/auth';
 import { openWhatsApp } from '@/services/whatsapp';
 import { confirmAction } from '@/utils/confirm';
@@ -25,12 +25,26 @@ export default function ProfileScreen() {
           </View>
           <Text className="text-xl font-bold text-white">Your GT Mart account</Text>
           <Text className="mt-2 text-center text-sm text-primary-light">
-            Login with your mobile number to save details and track orders faster.
+            {isPasswordAuth()
+              ? 'Sign up or log in to save your address and track orders.'
+              : 'Login with your mobile number to save details and track orders faster.'}
           </Text>
         </View>
 
         <View className="p-4">
-          <Button label="Login with mobile number" onPress={() => router.push('/login')} />
+          {isPasswordAuth() ? (
+            <>
+              <Button label="Sign up" onPress={() => router.push('/signup')} />
+              <Button
+                label="Log in"
+                variant="outline"
+                className="mt-3"
+                onPress={() => router.push('/login')}
+              />
+            </>
+          ) : (
+            <Button label="Login with mobile number" onPress={() => router.push('/login')} />
+          )}
           <Button
             label="Preview category layouts"
             variant="secondary"
@@ -50,7 +64,9 @@ export default function ProfileScreen() {
       'Log out?',
       isPhoneOnlyAuth()
         ? 'You will need your mobile number to sign in again. Your cart stays saved.'
-        : 'You will need OTP to sign in again. Your cart stays saved.',
+        : isPasswordAuth()
+          ? 'You will need your password to sign in again. Your cart stays saved.'
+          : 'You will need OTP to sign in again. Your cart stays saved.',
       'Log out',
     );
 

@@ -98,7 +98,20 @@ The app calls `send-customer-otp` instead of `request_customer_otp`. Verificatio
 
 Local dev without Supabase still uses mock OTP `123456` from `config.ts`.
 
-### Phone-only auth (launch mode)
+### Password auth (launch mode)
+
+Set in `.env` or EAS build env:
+
+```env
+EXPO_PUBLIC_PASSWORD_AUTH=true
+EXPO_PUBLIC_PHONE_ONLY_AUTH=false
+```
+
+Sign up / log in with mobile + password. Run migration `011_customer_password_auth.sql`.
+
+When MSG91 OTP is ready, set `EXPO_PUBLIC_PASSWORD_AUTH=false` and enable OTP or phone-only as needed.
+
+### Phone-only auth (interim)
 
 Set in `.env` or EAS build env:
 
@@ -117,7 +130,9 @@ When MSG91 is ready, set `EXPO_PUBLIC_PHONE_ONLY_AUTH=false` and rebuild.
 | `upsert_profile` | Create/update profile by phone |
 | `request_customer_otp` | ~~Generate OTP~~ (use Edge Function `send-customer-otp`) |
 | `store_customer_otp_hash` | Store OTP hash (service role / Edge Function only) |
-| `login_customer_by_phone` | Launch login without OTP (phone number only) |
+| `register_customer` | Sign up with mobile + password |
+| `login_customer` | Log in with mobile + password |
+| `login_customer_by_phone` | ~~Launch login without OTP~~ (disabled when password auth is on) |
 | `verify_customer_otp` | Validate OTP and create session |
 | `validate_customer_session` | Restore login on app open |
 | `revoke_customer_session` | Log out |

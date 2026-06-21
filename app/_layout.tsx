@@ -33,6 +33,10 @@ export default function RootLayout() {
                   options={{ title: 'Login', presentation: 'modal' }}
                 />
                 <Stack.Screen
+                  name="signup"
+                  options={{ title: 'Sign Up', presentation: 'modal' }}
+                />
+                <Stack.Screen
                   name="edit-profile"
                   options={{ title: 'Edit Profile' }}
                 />

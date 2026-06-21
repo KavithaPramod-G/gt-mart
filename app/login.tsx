@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -12,32 +13,101 @@ import {
 
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
-import { isOtpDevMode, isPhoneOnlyAuth } from '@/lib/env';
-import { formatPhoneDisplay, isValidIndianMobile } from '@/services/auth';
+import { isPasswordAuth, isPhoneOnlyAuth } from '@/lib/env';
+import { isValidIndianMobile, isValidPassword } from '@/services/auth';
 
-type LoginStep = 'phone' | 'otp';
-
-const OTP_RESEND_SECONDS = 60;
+const passwordAuth = isPasswordAuth();
 const phoneOnlyAuth = isPhoneOnlyAuth();
 
 export default function LoginScreen() {
+  const { loginWithPassword } = useAuth();
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordLogin = async () => {
+    if (!isValidIndianMobile(phone)) {
+      Alert.alert('Invalid number', 'Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      Alert.alert('Invalid password', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await loginWithPassword(phone, password);
+      if (result.success) {
+        router.replace('/');
+      } else {
+        Alert.alert('Login failed', result.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!passwordAuth) {
+    return <LegacyLoginScreen />;
+  }
+
+  return (
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerClassName="flex-grow p-4 pb-8">
+        <View className="mb-6 rounded-2xl bg-primary p-6">
+          <Text className="text-2xl font-extrabold text-white">Welcome back</Text>
+          <Text className="mt-2 text-sm leading-5 text-primary-light">
+            Log in with your mobile number and password to track orders and save your
+            delivery details.
+          </Text>
+        </View>
+
+        <View className="rounded-2xl border border-border bg-surface p-4">
+          <Text className="mb-4 text-base font-bold text-foreground">Log in</Text>
+          <TextInput
+            placeholder="10-digit mobile number"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            maxLength={13}
+            className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+          />
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+          />
+          <Button
+            label="Log in"
+            loading={loading}
+            className="mt-4"
+            onPress={handlePasswordLogin}
+          />
+          <Pressable className="mt-4" onPress={() => router.push('/signup')}>
+            <Text className="text-center text-sm text-muted">
+              New to GT Mart?{' '}
+              <Text className="font-semibold text-primary">Create an account</Text>
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+function LegacyLoginScreen() {
   const { sendOtp, verifyOtp, loginWithPhone } = useAuth();
-  const [step, setStep] = useState<LoginStep>('phone');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resendSeconds, setResendSeconds] = useState(0);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (resendSeconds <= 0) return;
-
-    const timer = setInterval(() => {
-      setResendSeconds((current) => (current > 0 ? current - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [resendSeconds]);
 
   const handlePhoneOnlyLogin = async () => {
     if (!isValidIndianMobile(phone)) {
@@ -49,7 +119,7 @@ export default function LoginScreen() {
     try {
       const result = await loginWithPhone(phone);
       if (result.success) {
-        router.replace('/profile');
+        router.replace('/');
       } else {
         Alert.alert('Could not log in', result.message);
       }
@@ -70,8 +140,6 @@ export default function LoginScreen() {
       if (result.success) {
         setStep('otp');
         setOtp('');
-        setDevOtpHint(result.devOtp ?? null);
-        setResendSeconds(OTP_RESEND_SECONDS);
         Alert.alert('OTP sent', result.message);
       } else {
         Alert.alert('Could not send OTP', result.message);
@@ -91,7 +159,7 @@ export default function LoginScreen() {
     try {
       const result = await verifyOtp(phone, otp);
       if (result.success) {
-        router.replace('/profile');
+        router.replace('/');
       } else {
         Alert.alert('Verification failed', result.message);
       }
@@ -109,9 +177,7 @@ export default function LoginScreen() {
         <View className="mb-6 rounded-2xl bg-primary p-6">
           <Text className="text-2xl font-extrabold text-white">Welcome to GT Mart</Text>
           <Text className="mt-2 text-sm leading-5 text-primary-light">
-            {phoneOnlyAuth
-              ? 'Enter your mobile number to save details and view order history. We may call to confirm orders.'
-              : 'Login with your mobile number. The same number will be used for orders and WhatsApp delivery updates.'}
+            Login with your mobile number for orders and WhatsApp delivery updates.
           </Text>
         </View>
 
@@ -126,11 +192,6 @@ export default function LoginScreen() {
               maxLength={13}
               className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
             />
-            <Text className="text-sm text-muted">
-              {phoneOnlyAuth
-                ? 'Your orders are linked to this number. GT Mart will verify orders by phone before delivery.'
-                : 'We will send a one-time password (OTP) to verify your number.'}
-            </Text>
             <Button
               label={phoneOnlyAuth ? 'Continue' : 'Send OTP'}
               loading={loading}
@@ -140,10 +201,7 @@ export default function LoginScreen() {
           </View>
         ) : (
           <View className="rounded-2xl border border-border bg-surface p-4">
-            <Text className="mb-1 text-base font-bold text-foreground">Enter OTP</Text>
-            <Text className="mb-4 text-sm text-muted">
-              Sent to {formatPhoneDisplay(phone)}
-            </Text>
+            <Text className="mb-4 text-base font-bold text-foreground">Enter OTP</Text>
             <TextInput
               placeholder="6-digit OTP"
               keyboardType="number-pad"
@@ -152,36 +210,11 @@ export default function LoginScreen() {
               maxLength={6}
               className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
             />
-            {isOtpDevMode() && devOtpHint ? (
-              <Text className="text-sm text-muted">Dev OTP: {devOtpHint}</Text>
-            ) : (
-              <Text className="text-sm text-muted">OTP expires in 5 minutes.</Text>
-            )}
             <Button
               label="Verify & Login"
               loading={loading}
               className="mt-4"
               onPress={handleVerifyOtp}
-            />
-            <Button
-              label={
-                resendSeconds > 0 ? `Resend OTP (${resendSeconds}s)` : 'Resend OTP'
-              }
-              variant="outline"
-              className="mt-2"
-              disabled={resendSeconds > 0 || loading}
-              onPress={handleSendOtp}
-            />
-            <Button
-              label="Change number"
-              variant="outline"
-              className="mt-2"
-              onPress={() => {
-                setStep('phone');
-                setOtp('');
-                setDevOtpHint(null);
-                setResendSeconds(0);
-              }}
             />
           </View>
         )}

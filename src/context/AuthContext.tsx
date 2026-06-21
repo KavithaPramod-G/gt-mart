@@ -9,15 +9,23 @@ import {
   useState,
 } from 'react';
 
-import { isPhoneOnlyAuth, isSupabaseConfigured } from '@/lib/env';
+import { isSupabaseConfigured } from '@/lib/env';
 import {
+  loginCustomerFromDb,
   loginByPhoneFromDb,
+  registerCustomerFromDb,
   revokeSessionInDb,
   validateSessionFromDb,
   verifyOtpFromDb,
 } from '@/services/api/authApi';
 import { syncProfileUpdateToDb } from '@/services/api/profileApi';
-import { normalizePhone, sendOtp, verifyOtpLocally } from '@/services/auth';
+import {
+  loginCustomerLocally,
+  normalizePhone,
+  registerCustomerLocally,
+  sendOtp,
+  verifyOtpLocally,
+} from '@/services/auth';
 import { UserProfile, UserProfileUpdate } from '@/types';
 
 const SESSION_STORAGE_KEY = '@gt_mart_session_id';
@@ -36,6 +44,19 @@ interface AuthContextValue {
   }>;
   verifyOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
   loginWithPhone: (phone: string) => Promise<{ success: boolean; message: string }>;
+  signUp: (
+    phone: string,
+    password: string,
+    name?: string,
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    alreadyRegistered?: boolean;
+  }>;
+  loginWithPassword: (
+    phone: string,
+    password: string,
+  ) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<{ success: boolean }>;
   updateProfile: (updates: UserProfileUpdate) => Promise<void>;
 }
@@ -152,6 +173,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persistSession, user],
   );
 
+  const loginWithPassword = useCallback(
+    async (phone: string, password: string) => {
+      if (isSupabaseConfigured()) {
+        const result = await loginCustomerFromDb(phone, password);
+        if (!result) {
+          return { success: false, message: 'Could not log in. Try again.' };
+        }
+
+        if (!result.success) {
+          return { success: false, message: result.message };
+        }
+
+        if (!result.sessionId || !result.profile) {
+          return { success: false, message: 'Login failed. Please try again.' };
+        }
+
+        await persistSession(result.sessionId, result.profile);
+        return { success: true, message: result.message };
+      }
+
+      const result = await loginCustomerLocally(phone, password);
+      if (!result.success || !result.profile) {
+        return { success: false, message: result.message };
+      }
+
+      await persistSession(null, result.profile);
+      return { success: true, message: result.message };
+    },
+    [persistSession],
+  );
+
+  const signUp = useCallback(
+    async (phone: string, password: string, name?: string) => {
+      if (isSupabaseConfigured()) {
+        const result = await registerCustomerFromDb(phone, password, name);
+        if (!result) {
+          return { success: false, message: 'Could not create account. Try again.' };
+        }
+
+        if (!result.success) {
+          return {
+            success: false,
+            message: result.message,
+            alreadyRegistered:
+              result.alreadyRegistered || /already registered/i.test(result.message),
+          };
+        }
+
+        if (!result.sessionId || !result.profile) {
+          return { success: false, message: 'Sign up failed. Please try again.' };
+        }
+
+        await persistSession(result.sessionId, result.profile);
+        return { success: true, message: result.message };
+      }
+
+      const result = await registerCustomerLocally(phone, password, name);
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message,
+          alreadyRegistered:
+            result.alreadyRegistered || /already registered/i.test(result.message),
+        };
+      }
+
+      if (!result.profile) {
+        return { success: false, message: 'Sign up failed. Please try again.' };
+      }
+
+      await persistSession(null, result.profile);
+      return { success: true, message: result.message };
+    },
+    [persistSession],
+  );
+
   const verifyOtp = useCallback(
     async (phone: string, otp: string) => {
       const normalizedPhone = normalizePhone(phone);
@@ -254,11 +351,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(user),
       sendOtp: sendOtpHandler,
       loginWithPhone,
+      signUp,
+      loginWithPassword,
       verifyOtp,
       logout,
       updateProfile,
     }),
-    [user, sessionId, isLoaded, sendOtpHandler, loginWithPhone, verifyOtp, logout, updateProfile],
+    [
+      user,
+      sessionId,
+      isLoaded,
+      sendOtpHandler,
+      loginWithPhone,
+      signUp,
+      loginWithPassword,
+      verifyOtp,
+      logout,
+      updateProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
