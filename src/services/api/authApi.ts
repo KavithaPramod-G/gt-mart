@@ -25,6 +25,8 @@ export interface AuthActionResult {
   sessionId?: string;
   profile?: UserProfile;
   alreadyRegistered?: boolean;
+  needsPasswordSetup?: boolean;
+  legacySetup?: boolean;
 }
 
 export interface SessionValidationResult {
@@ -155,19 +157,56 @@ export async function loginCustomerFromDb(
   if (!supabase) return null;
 
   const { data, error } = await supabase.rpc('login_customer', {
-    p_phone: normalizePhone(phone),
+    p_phone: phone,
     p_password: password,
   });
 
-  if (error || !data) {
-    console.warn('[authApi] login_customer failed:', error?.message);
+  if (data) {
+    return mapAuthActionResult(data);
+  }
+
+  if (error) {
+    console.warn('[authApi] login_customer failed:', error.message);
     return {
       success: false,
-      message: error?.message ?? 'Could not log in. Try again.',
+      message: error.message ?? 'Could not log in. Try again.',
     };
   }
 
-  return mapAuthActionResult(data);
+  return {
+    success: false,
+    message: 'Could not log in. Try again.',
+  };
+}
+
+export async function resetCustomerPasswordFromDb(
+  phone: string,
+  newPassword: string,
+): Promise<AuthActionResult | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc('reset_customer_password', {
+    p_phone: phone,
+    p_new_password: newPassword,
+  });
+
+  if (data) {
+    return mapAuthActionResult(data);
+  }
+
+  if (error) {
+    console.warn('[authApi] reset_customer_password failed:', error.message);
+    return {
+      success: false,
+      message: error.message ?? 'Could not reset password. Try again.',
+    };
+  }
+
+  return {
+    success: false,
+    message: 'Could not reset password. Try again.',
+  };
 }
 
 function mapAuthActionResult(data: unknown): AuthActionResult {
@@ -177,6 +216,8 @@ function mapAuthActionResult(data: unknown): AuthActionResult {
     session_id?: string;
     profile?: DbProfilePayload;
     already_registered?: boolean;
+    needs_password_setup?: boolean;
+    legacy_setup?: boolean;
   };
 
   const message = result.message ?? 'Something went wrong. Try again.';
@@ -190,6 +231,8 @@ function mapAuthActionResult(data: unknown): AuthActionResult {
     sessionId: result.session_id,
     profile: result.profile ? mapProfilePayload(result.profile) : undefined,
     alreadyRegistered,
+    needsPasswordSetup: Boolean(result.needs_password_setup),
+    legacySetup: Boolean(result.legacy_setup),
   };
 }
 
@@ -275,16 +318,27 @@ export async function validateSessionFromDb(
 
 export async function revokeSessionInDb(sessionId: string, phone: string): Promise<boolean> {
   const supabase = getSupabase();
-  if (!supabase) return false;
+  if (!supabase) return true;
 
   const { data, error } = await supabase.rpc('revoke_customer_session', {
     p_session_id: sessionId,
-    p_phone: normalizePhone(phone),
+    p_phone: phone ? normalizePhone(phone) : null,
   });
 
   if (error) {
-    console.warn('[authApi] revoke_session failed:', error?.message);
-    return false;
+    console.warn('[authApi] revoke_session failed:', error.message);
+
+    const { data: legacyData, error: legacyError } = await supabase.rpc(
+      'revoke_customer_session',
+      { p_session_id: sessionId },
+    );
+
+    if (legacyError) {
+      console.warn('[authApi] legacy revoke_session failed:', legacyError.message);
+      return false;
+    }
+
+    return Boolean((legacyData as { success?: boolean })?.success);
   }
 
   return Boolean((data as { success?: boolean })?.success);

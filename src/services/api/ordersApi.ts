@@ -142,17 +142,21 @@ export async function placeOrderInDb(
   return fetchOrderByPhoneAndId(customerPhone, orderId as string);
 }
 
-export async function fetchOrdersBySession(sessionId: string): Promise<Order[] | null> {
+export async function fetchOrdersBySession(sessionId: string): Promise<Order[]> {
   const supabase = getSupabase();
-  if (!supabase) return null;
+  if (!supabase) return [];
 
   const { data, error } = await supabase.rpc('get_customer_orders', {
     p_session_id: sessionId,
   });
 
-  if (error || !data) {
-    console.warn('[ordersApi] fetch orders failed:', error?.message);
-    return null;
+  if (error) {
+    console.warn('[ordersApi] fetch orders failed:', error.message);
+    return [];
+  }
+
+  if (!data) {
+    return [];
   }
 
   const rows = data as DbOrderPayload[];

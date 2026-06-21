@@ -24,15 +24,20 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
 
   const handlePasswordLogin = async () => {
+    setErrorMessage(null);
+    setNeedsPasswordSetup(false);
+
     if (!isValidIndianMobile(phone)) {
-      Alert.alert('Invalid number', 'Enter a valid 10-digit Indian mobile number.');
+      setErrorMessage('Enter a valid 10-digit Indian mobile number.');
       return;
     }
 
     if (!isValidPassword(password)) {
-      Alert.alert('Invalid password', 'Password must be at least 6 characters.');
+      setErrorMessage('Password must be at least 6 characters.');
       return;
     }
 
@@ -42,6 +47,8 @@ export default function LoginScreen() {
       if (result.success) {
         router.replace('/');
       } else {
+        setErrorMessage(result.message);
+        setNeedsPasswordSetup(Boolean(result.needsPasswordSetup));
         Alert.alert('Login failed', result.message);
       }
     } finally {
@@ -81,15 +88,36 @@ export default function LoginScreen() {
             placeholder="Password"
             secureTextEntry
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(value) => {
+              setPassword(value);
+              setErrorMessage(null);
+              setNeedsPasswordSetup(false);
+            }}
             className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
           />
+
+          {errorMessage ? (
+            <View className="mt-2 rounded-xl border border-[#F5C2C7] bg-[#FDECEC] p-3">
+              <Text className="text-sm leading-5 text-[#B42318]">{errorMessage}</Text>
+              {needsPasswordSetup ? (
+                <Pressable className="mt-2" onPress={() => router.push('/forgot-password')}>
+                  <Text className="text-sm font-semibold text-primary">Set password now</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+
           <Button
             label="Log in"
             loading={loading}
             className="mt-4"
             onPress={handlePasswordLogin}
           />
+          <Pressable className="mt-3" onPress={() => router.push('/forgot-password')}>
+            <Text className="text-center text-sm font-semibold text-primary">
+              Forgot password?
+            </Text>
+          </Pressable>
           <Pressable className="mt-4" onPress={() => router.push('/signup')}>
             <Text className="text-center text-sm text-muted">
               New to GT Mart?{' '}

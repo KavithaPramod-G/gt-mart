@@ -14,6 +14,7 @@ import {
   loginCustomerFromDb,
   loginByPhoneFromDb,
   registerCustomerFromDb,
+  resetCustomerPasswordFromDb,
   revokeSessionInDb,
   validateSessionFromDb,
   verifyOtpFromDb,
@@ -23,6 +24,7 @@ import {
   loginCustomerLocally,
   normalizePhone,
   registerCustomerLocally,
+  resetCustomerPasswordLocally,
   sendOtp,
   verifyOtpLocally,
 } from '@/services/auth';
@@ -56,7 +58,15 @@ interface AuthContextValue {
   loginWithPassword: (
     phone: string,
     password: string,
-  ) => Promise<{ success: boolean; message: string }>;
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    needsPasswordSetup?: boolean;
+  }>;
+  resetPassword: (
+    phone: string,
+    newPassword: string,
+  ) => Promise<{ success: boolean; message: string; legacySetup?: boolean }>;
   logout: () => Promise<{ success: boolean }>;
   updateProfile: (updates: UserProfileUpdate) => Promise<void>;
 }
@@ -182,7 +192,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (!result.success) {
-          return { success: false, message: result.message };
+          return {
+            success: false,
+            message: result.message,
+            needsPasswordSetup: result.needsPasswordSetup,
+          };
         }
 
         if (!result.sessionId || !result.profile) {
@@ -195,11 +209,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const result = await loginCustomerLocally(phone, password);
       if (!result.success || !result.profile) {
-        return { success: false, message: result.message };
+        return {
+          success: false,
+          message: result.message,
+          needsPasswordSetup: result.needsPasswordSetup,
+        };
       }
 
       await persistSession(null, result.profile);
       return { success: true, message: result.message };
+    },
+    [persistSession],
+  );
+
+  const resetPassword = useCallback(
+    async (phone: string, newPassword: string) => {
+      if (isSupabaseConfigured()) {
+        const result = await resetCustomerPasswordFromDb(phone, newPassword);
+        if (!result) {
+          return { success: false, message: 'Could not reset password. Try again.' };
+        }
+
+        if (!result.success) {
+          return { success: false, message: result.message };
+        }
+
+        if (!result.sessionId || !result.profile) {
+          return { success: false, message: 'Password reset failed. Please try again.' };
+        }
+
+        await persistSession(result.sessionId, result.profile);
+        return {
+          success: true,
+          message: result.message,
+          legacySetup: result.legacySetup,
+        };
+      }
+
+      const result = await resetCustomerPasswordLocally(phone, newPassword);
+      if (!result.success || !result.profile) {
+        return { success: false, message: result.message };
+      }
+
+      await persistSession(null, result.profile);
+      return {
+        success: true,
+        message: result.message,
+        legacySetup: result.legacySetup,
+      };
     },
     [persistSession],
   );
@@ -296,28 +353,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async (): Promise<{ success: boolean }> => {
     const storedSessionId =
       sessionId ?? (await AsyncStorage.getItem(SESSION_STORAGE_KEY));
+    const phoneToRevoke = user?.phone ?? '';
 
-    let revoked = true;
-    if (storedSessionId && isSupabaseConfigured()) {
-      const phoneForRevoke = user?.phone ?? (await AsyncStorage.getItem(USER_STORAGE_KEY));
-      let normalizedPhone = '';
-      if (phoneForRevoke) {
-        try {
-          const parsed = JSON.parse(phoneForRevoke) as UserProfile;
-          normalizedPhone = parsed.phone;
-        } catch {
-          normalizedPhone = phoneForRevoke;
-        }
+    try {
+      if (storedSessionId && isSupabaseConfigured()) {
+        await revokeSessionInDb(storedSessionId, phoneToRevoke);
       }
-      revoked = await revokeSessionInDb(storedSessionId, normalizedPhone);
+    } catch (error) {
+      console.warn('[AuthContext] logout revoke failed:', error);
     }
 
     setSessionId(null);
     setUser(null);
-    await clearStoredAuth();
+    await AsyncStorage.multiRemove([SESSION_STORAGE_KEY, USER_STORAGE_KEY]);
 
-    return { success: revoked };
-  }, [sessionId]);
+    return { success: true };
+  }, [sessionId, user]);
 
   const updateProfile = useCallback(
     async (updates: UserProfileUpdate) => {
@@ -353,6 +404,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithPhone,
       signUp,
       loginWithPassword,
+      resetPassword,
       verifyOtp,
       logout,
       updateProfile,
@@ -365,6 +417,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithPhone,
       signUp,
       loginWithPassword,
+      resetPassword,
       verifyOtp,
       logout,
       updateProfile,

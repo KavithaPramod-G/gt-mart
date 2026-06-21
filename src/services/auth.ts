@@ -151,7 +151,12 @@ export async function registerCustomerLocally(
 export async function loginCustomerLocally(
   phone: string,
   password: string,
-): Promise<{ success: boolean; message: string; profile?: UserProfile }> {
+): Promise<{
+  success: boolean;
+  message: string;
+  profile?: UserProfile;
+  needsPasswordSetup?: boolean;
+}> {
   if (!isValidIndianMobile(phone)) {
     return { success: false, message: 'Invalid mobile number or password.' };
   }
@@ -160,7 +165,19 @@ export async function loginCustomerLocally(
   const users = await readMockPasswordUsers();
   const match = users.find((entry) => entry.phone === normalizedPhone);
 
-  if (!match || match.password !== password.trim()) {
+  if (!match) {
+    return { success: false, message: 'Invalid mobile number or password.' };
+  }
+
+  if (!match.password) {
+    return {
+      success: false,
+      needsPasswordSetup: true,
+      message: 'This account has no password yet. Use Forgot password to set one.',
+    };
+  }
+
+  if (match.password !== password.trim()) {
     return { success: false, message: 'Invalid mobile number or password.' };
   }
 
@@ -168,5 +185,47 @@ export async function loginCustomerLocally(
     success: true,
     message: 'Logged in successfully.',
     profile: match.profile,
+  };
+}
+
+export async function resetCustomerPasswordLocally(
+  phone: string,
+  newPassword: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  profile?: UserProfile;
+  legacySetup?: boolean;
+}> {
+  if (!isValidIndianMobile(phone)) {
+    return { success: false, message: 'Enter a valid 10-digit mobile number.' };
+  }
+
+  if (!isValidPassword(newPassword)) {
+    return { success: false, message: 'Password must be at least 6 characters.' };
+  }
+
+  const normalizedPhone = normalizePhone(phone);
+  const users = await readMockPasswordUsers();
+  const index = users.findIndex((entry) => entry.phone === normalizedPhone);
+
+  if (index === -1) {
+    return {
+      success: false,
+      message: 'No account found for this mobile number. Please sign up.',
+    };
+  }
+
+  const legacySetup = !users[index].password;
+  users[index].password = newPassword.trim();
+  await writeMockPasswordUsers(users);
+
+  return {
+    success: true,
+    legacySetup,
+    message: legacySetup
+      ? 'Password created successfully.'
+      : 'Password updated successfully.',
+    profile: users[index].profile,
   };
 }

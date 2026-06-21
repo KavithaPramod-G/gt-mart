@@ -75,6 +75,7 @@ export default function ProfileScreen() {
     setLoggingOut(true);
     try {
       await logout();
+      router.replace('/(tabs)/profile');
     } catch {
       Alert.alert('Log out failed', 'Please try again.');
     } finally {

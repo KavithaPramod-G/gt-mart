@@ -60,11 +60,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const refreshOrders = useCallback(async () => {
     if (isSupabaseConfigured() && sessionId) {
       const remote = await fetchOrdersBySession(sessionId);
-      if (remote) {
-        setOrders(remote);
-        await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(remote));
-        return;
-      }
+      setOrders(remote);
+      await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(remote));
+      return;
     }
 
     const stored = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
