@@ -2,11 +2,14 @@ import { categoryLabels } from '@/data/products';
 import { ProductCategory } from '@/types';
 
 export const SHOP_CATEGORIES: ProductCategory[] = [
+  'general-items',
   'fruits-vegetables',
   'dairy-eggs',
   'staples-grains',
   'oils-ghee',
   'snacks-beverages',
+  'chocolates',
+  'ice-creams',
   'bakery',
   'instant-foods',
   'dry-fruits-nuts',
@@ -20,6 +23,12 @@ export const CATEGORY_META: Record<
   ProductCategory,
   { emoji: string; tint: string; accent: string; blurb: string }
 > = {
+  'general-items': {
+    emoji: '📦',
+    tint: '#F7F9F8',
+    accent: '#5C6B63',
+    blurb: 'General store items',
+  },
   'fruits-vegetables': {
     emoji: '🥬',
     tint: '#E8F5EE',
@@ -49,6 +58,18 @@ export const CATEGORY_META: Record<
     tint: '#F0FAF8',
     accent: '#1A7A6E',
     blurb: 'Snacks & drinks',
+  },
+  chocolates: {
+    emoji: '🍫',
+    tint: '#FFF0E8',
+    accent: '#8B4513',
+    blurb: 'Chocolates & treats',
+  },
+  'ice-creams': {
+    emoji: '🍦',
+    tint: '#EEF4FF',
+    accent: '#3B6BB5',
+    blurb: 'Frozen desserts',
   },
   bakery: {
     emoji: '🍞',

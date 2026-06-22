@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useCart } from '@/context/CartContext';
 import { ProductPrice } from '@/components/ProductPrice';
+import { ProductImage } from '@/components/ProductImage';
 import { Product } from '@/types';
 
 interface ProductCardProps {
@@ -18,8 +19,8 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       onPress={onPress}
       className="mb-2 flex-row items-center rounded-2xl border border-border bg-surface p-4 active:opacity-90"
     >
-      <View className="mr-4 h-14 w-14 items-center justify-center rounded-xl bg-primary-light">
-        <Text className="text-3xl">{product.emoji}</Text>
+      <View className="mr-4">
+        <ProductImage product={product} size="md" />
       </View>
 
       <View className="flex-1">

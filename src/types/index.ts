@@ -1,9 +1,12 @@
 export type ProductCategory =
+  | 'general-items'
   | 'fruits-vegetables'
   | 'dairy-eggs'
   | 'staples-grains'
   | 'oils-ghee'
   | 'snacks-beverages'
+  | 'chocolates'
+  | 'ice-creams'
   | 'bakery'
   | 'instant-foods'
   | 'dry-fruits-nuts'
@@ -21,6 +24,7 @@ export interface Product {
   unit: string;
   category: ProductCategory;
   emoji: string;
+  imageUrl?: string | null;
   inStock: boolean;
 }
 

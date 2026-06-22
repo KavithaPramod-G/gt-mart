@@ -11,6 +11,7 @@ interface DbProduct {
   unit: string;
   category_id: string;
   emoji: string;
+  image_url: string | null;
   in_stock: boolean;
 }
 
@@ -24,6 +25,7 @@ function mapProduct(row: DbProduct): Product {
     unit: row.unit,
     category: row.category_id as ProductCategory,
     emoji: row.emoji,
+    imageUrl: row.image_url,
     inStock: row.in_stock,
   };
 }
@@ -34,7 +36,7 @@ export async function fetchProductsFromDb(): Promise<Product[] | null> {
 
   const { data, error } = await supabase
     .from('products')
-    .select('id, item_id, item_name, description, mrp, price, unit, category_id, emoji, in_stock')
+    .select('id, item_id, item_name, description, mrp, price, unit, category_id, emoji, image_url, in_stock')
     .eq('in_stock', true)
     .order('item_name');
 

@@ -8,7 +8,6 @@ import {
   useState,
 } from 'react';
 
-import { products as localProducts } from '@/data/products';
 import { isSupabaseConfigured } from '@/lib/env';
 import { fetchProductsFromDb } from '@/services/api/productsApi';
 import { Product } from '@/types';
@@ -23,13 +22,13 @@ interface ProductsContextValue {
 const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(localProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured());
   const [source, setSource] = useState<'local' | 'database'>('local');
 
   const refresh = useCallback(async () => {
     if (!isSupabaseConfigured()) {
-      setProducts(localProducts);
+      setProducts([]);
       setSource('local');
       setIsLoading(false);
       return;
@@ -38,16 +37,16 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const remote = await fetchProductsFromDb();
-      if (remote && remote.length > 0) {
+      if (remote) {
         setProducts(remote);
         setSource('database');
       } else {
-        setProducts(localProducts);
+        setProducts([]);
         setSource('local');
       }
     } catch (error) {
       console.warn('[ProductsContext] refresh failed:', error);
-      setProducts(localProducts);
+      setProducts([]);
       setSource('local');
     } finally {
       setIsLoading(false);

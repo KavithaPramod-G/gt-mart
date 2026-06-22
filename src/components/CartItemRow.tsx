@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { CURRENCY } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
 import { ProductPrice } from '@/components/ProductPrice';
+import { ProductImage } from '@/components/ProductImage';
 import { CartItem } from '@/types';
 
 interface CartItemRowProps {
@@ -14,8 +15,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
 
   return (
     <View className="mb-2 flex-row rounded-2xl border border-border bg-surface p-4">
-      <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-primary-light">
-        <Text className="text-2xl">{item.product.emoji}</Text>
+      <View className="mr-4">
+        <ProductImage product={item.product} size="sm" />
       </View>
 
       <View className="flex-1">
