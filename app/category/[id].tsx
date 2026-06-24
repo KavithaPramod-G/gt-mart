@@ -1,9 +1,8 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 
-import { ProductCard } from '@/components/ProductCard';
-import { ProductListFooter } from '@/components/ProductListFooter';
+import { ProductGridList } from '@/components/ProductGridList';
 import { StackBackButton } from '@/components/StackBackButton';
 import { ALL_PRODUCTS_META, isShopListingId } from '@/constants/categoryMeta';
 import { useCategories } from '@/context/CategoriesContext';
@@ -93,27 +92,19 @@ export default function CategoryProductsScreen() {
             <ActivityIndicator color="#1B7A4E" />
           </View>
         ) : (
-          <FlatList
+          <ProductGridList
             className="flex-1"
-            data={products}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-            renderItem={({ item }) => <ProductCard product={item} />}
+            products={products}
             onEndReached={loadMore}
             onEndReachedThreshold={0.4}
+            isLoadingMore={isLoadingMore}
+            hasMore={hasMore}
             ListEmptyComponent={
               !isLoading ? (
                 <View className="items-center p-8">
                   <Text className="text-[15px] text-muted">No products found.</Text>
                 </View>
               ) : null
-            }
-            ListFooterComponent={
-              <ProductListFooter
-                isLoadingMore={isLoadingMore}
-                hasMore={hasMore}
-                itemCount={products.length}
-              />
             }
           />
         )}

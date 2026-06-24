@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   ScrollView,
   Text,
   TextInput,
@@ -10,8 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryHeroCards } from '@/components/CategoryHeroCards';
-import { ProductCard } from '@/components/ProductCard';
-import { ProductListFooter } from '@/components/ProductListFooter';
+import { ProductGridList } from '@/components/ProductGridList';
 import { SHOP_TAGLINE } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
@@ -59,14 +57,14 @@ export default function ShopScreen() {
           <ActivityIndicator color="#1B7A4E" />
         </View>
       ) : (
-        <FlatList
+        <ProductGridList
           className="flex-1"
-          data={products}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}
-          renderItem={({ item }) => <ProductCard product={item} />}
+          products={products}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore}
+          contentContainerStyle={{ paddingTop: 16 }}
           ListHeaderComponent={
             <Text className="mb-3 text-base font-bold text-foreground">
               {totalCount > 0
@@ -80,13 +78,6 @@ export default function ShopScreen() {
                 <Text className="text-[15px] text-muted">No products found.</Text>
               </View>
             ) : null
-          }
-          ListFooterComponent={
-            <ProductListFooter
-              isLoadingMore={isLoadingMore}
-              hasMore={hasMore}
-              itemCount={products.length}
-            />
           }
         />
       )}
