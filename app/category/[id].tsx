@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
 
 import { ProductCard } from '@/components/ProductCard';
+import { ProductListFooter } from '@/components/ProductListFooter';
 import { StackBackButton } from '@/components/StackBackButton';
 import {
   ALL_PRODUCTS_META,
@@ -10,29 +11,24 @@ import {
   getCategoryLabel,
   isShopListingId,
 } from '@/constants/categoryMeta';
-import { useProducts } from '@/context/ProductsContext';
+import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
+import { isSupabaseConfigured } from '@/lib/env';
 import { ProductCategory } from '@/types';
 
 export default function CategoryProductsScreen() {
   const { id, q } = useLocalSearchParams<{ id: string; q?: string }>();
-  const { products, isLoading } = useProducts();
   const [searchQuery, setSearchQuery] = useState(typeof q === 'string' ? q : '');
 
   const listingId = id && isShopListingId(id) ? id : null;
   const isAll = listingId === 'all';
   const category = listingId && listingId !== 'all' ? (listingId as ProductCategory) : null;
 
-  const filteredProducts = useMemo(() => {
-    if (!listingId) return [];
-
-    const query = searchQuery.trim().toLowerCase();
-    return products.filter((product) => {
-      if (!product.inStock) return false;
-      if (!isAll && product.category !== category) return false;
-      if (query && !product.name.toLowerCase().includes(query)) return false;
-      return true;
+  const { products, totalCount, isLoading, isLoadingMore, hasMore, loadMore } =
+    usePaginatedProducts({
+      categoryId: isAll ? null : category,
+      search: searchQuery,
+      enabled: Boolean(listingId) && isSupabaseConfigured(),
     });
-  }, [products, listingId, isAll, category, searchQuery]);
 
   if (!listingId) {
     return (
@@ -69,7 +65,10 @@ export default function CategoryProductsScreen() {
             <Text className="mr-2 text-2xl">{meta.emoji}</Text>
             <View className="flex-1">
               <Text className="text-base font-bold text-foreground">{label}</Text>
-              <Text className="text-xs text-muted">{meta.blurb}</Text>
+              <Text className="text-xs text-muted">
+                {meta.blurb}
+                {totalCount > 0 ? ` · ${totalCount} items` : ''}
+              </Text>
             </View>
           </View>
           <TextInput
@@ -81,21 +80,32 @@ export default function CategoryProductsScreen() {
           />
         </View>
 
-        {isLoading ? (
+        {isLoading && products.length === 0 ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color="#1B7A4E" />
           </View>
         ) : (
           <FlatList
             className="flex-1"
-            data={filteredProducts}
+            data={products}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
             renderItem={({ item }) => <ProductCard product={item} />}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.4}
             ListEmptyComponent={
-              <View className="items-center p-8">
-                <Text className="text-[15px] text-muted">No products found.</Text>
-              </View>
+              !isLoading ? (
+                <View className="items-center p-8">
+                  <Text className="text-[15px] text-muted">No products found.</Text>
+                </View>
+              ) : null
+            }
+            ListFooterComponent={
+              <ProductListFooter
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
+                itemCount={products.length}
+              />
             }
           />
         )}

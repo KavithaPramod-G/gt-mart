@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { CategoryGridAmazon } from '@/components/category-designs/CategoryGridAmazon';
@@ -8,6 +8,7 @@ import { CategoryWrappedChips } from '@/components/category-designs/CategoryWrap
 import { DesignPreviewShell } from '@/components/category-designs/DesignPreviewShell';
 import { getCategoryLabel } from '@/constants/categoryMeta';
 import { useProducts } from '@/context/ProductsContext';
+import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
 import { ProductCategory } from '@/types';
 
 function MiniProductPreview({
@@ -17,15 +18,12 @@ function MiniProductPreview({
   category: ProductCategory | 'all' | null;
   label: string;
 }) {
-  const { products } = useProducts();
-
-  const preview = useMemo(() => {
-    const filtered =
-      category && category !== 'all'
-        ? products.filter((p) => p.category === category && p.inStock)
-        : products.filter((p) => p.inStock);
-    return filtered.slice(0, 2);
-  }, [category, products]);
+  const { categoryCounts } = useProducts();
+  const { products: preview } = usePaginatedProducts({
+    categoryId: category && category !== 'all' ? category : null,
+    enabled: Boolean(category),
+    pageSize: 2,
+  });
 
   if (!category) {
     return (
@@ -35,10 +33,15 @@ function MiniProductPreview({
     );
   }
 
+  const total =
+    category === 'all'
+      ? Object.values(categoryCounts).reduce((sum, count) => sum + count, 0)
+      : categoryCounts[category] ?? preview.length;
+
   return (
     <View>
       <Text className="mb-2 text-xs font-semibold text-muted">
-        Showing {label} · {preview.length}+ items
+        Showing {label} · {total > 0 ? total : preview.length}+ items
       </Text>
       {preview.map((product) => (
         <View
@@ -57,16 +60,9 @@ function MiniProductPreview({
 }
 
 export default function CategoryDesignsScreen() {
-  const { products } = useProducts();
+  const { categoryCounts } = useProducts();
 
-  const counts = useMemo(() => {
-    const map: Partial<Record<ProductCategory, number>> = {};
-    for (const product of products) {
-      if (!product.inStock) continue;
-      map[product.category] = (map[product.category] ?? 0) + 1;
-    }
-    return map;
-  }, [products]);
+  const counts = categoryCounts as Partial<Record<ProductCategory, number>>;
 
   const [gridPick, setGridPick] = useState<ProductCategory | null>(null);
   const [heroPick, setHeroPick] = useState<ProductCategory | 'all'>('all');

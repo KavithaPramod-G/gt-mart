@@ -9,45 +9,34 @@ import {
 } from 'react';
 
 import { isSupabaseConfigured } from '@/lib/env';
-import { fetchProductsFromDb } from '@/services/api/productsApi';
-import { Product } from '@/types';
+import { fetchInStockCountByCategory } from '@/services/api/productsApi';
 
 interface ProductsContextValue {
-  products: Product[];
+  categoryCounts: Record<string, number>;
   isLoading: boolean;
-  source: 'local' | 'database';
   refresh: () => Promise<void>;
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured());
-  const [source, setSource] = useState<'local' | 'database'>('local');
 
   const refresh = useCallback(async () => {
     if (!isSupabaseConfigured()) {
-      setProducts([]);
-      setSource('local');
+      setCategoryCounts({});
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     try {
-      const remote = await fetchProductsFromDb();
-      if (remote) {
-        setProducts(remote);
-        setSource('database');
-      } else {
-        setProducts([]);
-        setSource('local');
-      }
+      const counts = await fetchInStockCountByCategory();
+      setCategoryCounts(counts ?? {});
     } catch (error) {
       console.warn('[ProductsContext] refresh failed:', error);
-      setProducts([]);
-      setSource('local');
+      setCategoryCounts({});
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +47,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ products, isLoading, source, refresh }),
-    [products, isLoading, source, refresh],
+    () => ({ categoryCounts, isLoading, refresh }),
+    [categoryCounts, isLoading, refresh],
   );
 
   return (
