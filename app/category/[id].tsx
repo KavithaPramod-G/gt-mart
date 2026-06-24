@@ -1,36 +1,44 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
 
 import { ProductCard } from '@/components/ProductCard';
 import { ProductListFooter } from '@/components/ProductListFooter';
 import { StackBackButton } from '@/components/StackBackButton';
-import {
-  ALL_PRODUCTS_META,
-  CATEGORY_META,
-  getCategoryLabel,
-  isShopListingId,
-} from '@/constants/categoryMeta';
+import { ALL_PRODUCTS_META, isShopListingId } from '@/constants/categoryMeta';
+import { useCategories } from '@/context/CategoriesContext';
 import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
 import { isSupabaseConfigured } from '@/lib/env';
-import { ProductCategory } from '@/types';
 
 export default function CategoryProductsScreen() {
   const { id, q } = useLocalSearchParams<{ id: string; q?: string }>();
   const [searchQuery, setSearchQuery] = useState(typeof q === 'string' ? q : '');
+  const { categories, isLoading: categoriesLoading, getCategoryLabel, getCategoryUi, isKnownCategoryId } =
+    useCategories();
 
-  const listingId = id && isShopListingId(id) ? id : null;
+  const knownIds = useMemo(() => new Set(categories.map((category) => category.id)), [categories]);
+
+  const listingId =
+    id && isShopListingId(id, knownIds.size > 0 ? knownIds : undefined) ? id : null;
   const isAll = listingId === 'all';
-  const category = listingId && listingId !== 'all' ? (listingId as ProductCategory) : null;
+  const categoryId = listingId && listingId !== 'all' ? listingId : null;
 
   const { products, totalCount, isLoading, isLoadingMore, hasMore, loadMore } =
     usePaginatedProducts({
-      categoryId: isAll ? null : category,
+      categoryId: isAll ? null : categoryId,
       search: searchQuery,
       enabled: Boolean(listingId) && isSupabaseConfigured(),
     });
 
-  if (!listingId) {
+  if (categoriesLoading && !listingId && id) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator color="#1B7A4E" />
+      </View>
+    );
+  }
+
+  if (!listingId || (categoryId && !isKnownCategoryId(categoryId))) {
     return (
       <>
         <Stack.Screen options={{ title: 'Not found' }} />
@@ -41,8 +49,8 @@ export default function CategoryProductsScreen() {
     );
   }
 
-  const meta = isAll ? ALL_PRODUCTS_META : CATEGORY_META[category!];
-  const label = isAll ? ALL_PRODUCTS_META.label : getCategoryLabel(category!);
+  const meta = isAll ? ALL_PRODUCTS_META : getCategoryUi(categoryId!);
+  const label = isAll ? ALL_PRODUCTS_META.label : getCategoryLabel(categoryId!);
   const searchPlaceholder = isAll
     ? 'Search all products...'
     : `Search in ${label.toLowerCase()}...`;

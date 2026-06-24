@@ -1,17 +1,17 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { getCategoryLabel, SHOP_CATEGORIES } from '@/constants/categoryMeta';
-import { ProductCategory } from '@/types';
+import { useCategories } from '@/context/CategoriesContext';
 import { cn } from '@/utils/cn';
 
 interface CategoryFilterProps {
-  selected: ProductCategory | 'all';
-  onSelect: (category: ProductCategory | 'all') => void;
+  selected: string | 'all';
+  onSelect: (category: string | 'all') => void;
 }
 
-const categories: Array<ProductCategory | 'all'> = ['all', ...SHOP_CATEGORIES];
-
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
+  const { categories, getCategoryLabel } = useCategories();
+  const chips: Array<string | 'all'> = ['all', ...categories.map((category) => category.id)];
+
   return (
     <View className="border-b border-border bg-background py-3">
       <ScrollView
@@ -24,7 +24,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
           minHeight: 40,
         }}
       >
-        {categories.map((category) => {
+        {chips.map((category) => {
           const isSelected = selected === category;
           const label = category === 'all' ? 'All' : getCategoryLabel(category);
 

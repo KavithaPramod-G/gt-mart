@@ -2,20 +2,19 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { CategoryGridAmazon } from '@/components/category-designs/CategoryGridAmazon';
-import { CategoryHeroCards } from '@/components/category-designs/CategoryHeroCards';
+import { CategoryHeroCards } from '@/components/CategoryHeroCards';
 import { CategoryListRows } from '@/components/category-designs/CategoryListRows';
 import { CategoryWrappedChips } from '@/components/category-designs/CategoryWrappedChips';
 import { DesignPreviewShell } from '@/components/category-designs/DesignPreviewShell';
-import { getCategoryLabel } from '@/constants/categoryMeta';
+import { useCategories } from '@/context/CategoriesContext';
 import { useProducts } from '@/context/ProductsContext';
 import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
-import { ProductCategory } from '@/types';
 
 function MiniProductPreview({
   category,
   label,
 }: {
-  category: ProductCategory | 'all' | null;
+  category: string | 'all' | null;
   label: string;
 }) {
   const { categoryCounts } = useProducts();
@@ -61,15 +60,14 @@ function MiniProductPreview({
 
 export default function CategoryDesignsScreen() {
   const { categoryCounts } = useProducts();
+  const { getCategoryLabel } = useCategories();
 
-  const counts = categoryCounts as Partial<Record<ProductCategory, number>>;
+  const [gridPick, setGridPick] = useState<string | null>(null);
+  const [heroPick, setHeroPick] = useState<string | 'all'>('all');
+  const [listPick, setListPick] = useState<string | null>(null);
+  const [chipPick, setChipPick] = useState<string | 'all' | null>('all');
 
-  const [gridPick, setGridPick] = useState<ProductCategory | null>(null);
-  const [heroPick, setHeroPick] = useState<ProductCategory | 'all'>('all');
-  const [listPick, setListPick] = useState<ProductCategory | null>(null);
-  const [chipPick, setChipPick] = useState<ProductCategory | 'all' | null>('all');
-
-  const pickLabel = (category: ProductCategory | 'all' | null) => {
+  const pickLabel = (category: string | 'all' | null) => {
     if (!category) return '';
     if (category === 'all') return 'All items';
     return getCategoryLabel(category);
@@ -91,7 +89,7 @@ export default function CategoryDesignsScreen() {
           <MiniProductPreview category={gridPick} label={pickLabel(gridPick)} />
         }
       >
-        <CategoryGridAmazon selected={gridPick} onSelect={setGridPick} counts={counts} />
+        <CategoryGridAmazon selected={gridPick} onSelect={setGridPick} counts={categoryCounts} />
       </DesignPreviewShell>
 
       <DesignPreviewShell
@@ -102,9 +100,7 @@ export default function CategoryDesignsScreen() {
           <MiniProductPreview category={heroPick} label={pickLabel(heroPick)} />
         }
       >
-        <CategoryHeroCards
-          onCategoryPress={(category) => setHeroPick(category)}
-        />
+        <CategoryHeroCards onCategoryPress={(category) => setHeroPick(category)} />
       </DesignPreviewShell>
 
       <DesignPreviewShell
@@ -115,7 +111,7 @@ export default function CategoryDesignsScreen() {
           <MiniProductPreview category={listPick} label={pickLabel(listPick)} />
         }
       >
-        <CategoryListRows selected={listPick} onSelect={setListPick} counts={counts} />
+        <CategoryListRows selected={listPick} onSelect={setListPick} counts={categoryCounts} />
       </DesignPreviewShell>
 
       <DesignPreviewShell

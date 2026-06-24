@@ -1,4 +1,14 @@
--- Seed categories for GT Mart (products are added via admin / Excel import)
+-- Category UI fields (emoji, colors, order) — single source of truth for mobile + admin
+
+alter table public.categories
+  add column if not exists emoji text not null default '🛒',
+  add column if not exists tint text not null default '#F7F9F8',
+  add column if not exists accent text not null default '#1B7A4E',
+  add column if not exists blurb text not null default '',
+  add column if not exists sort_order integer not null default 0,
+  add column if not exists is_active boolean not null default true,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
 
 insert into public.categories (id, label, emoji, tint, accent, blurb, sort_order, is_active) values
   ('general-items', 'General Items', '📦', '#F7F9F8', '#5C6B63', 'General store items', 10, true),
@@ -25,3 +35,20 @@ on conflict (id) do update set
   sort_order = excluded.sort_order,
   is_active = excluded.is_active,
   updated_at = now();
+
+create or replace function public.set_categories_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists categories_updated_at on public.categories;
+
+create trigger categories_updated_at
+  before update on public.categories
+  for each row
+  execute function public.set_categories_updated_at();

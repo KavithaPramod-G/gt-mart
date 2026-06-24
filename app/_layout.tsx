@@ -9,13 +9,15 @@ import { colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { OrderProvider } from '@/context/OrderContext';
+import { CategoriesProvider } from '@/context/CategoriesContext';
 import { ProductsProvider } from '@/context/ProductsContext';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView className="flex-1">
-      <ProductsProvider>
-        <AuthProvider>
+      <CategoriesProvider>
+        <ProductsProvider>
+          <AuthProvider>
           <CartProvider>
             <OrderProvider>
               <StatusBar style="dark" />
@@ -64,7 +66,8 @@ export default function RootLayout() {
             </OrderProvider>
           </CartProvider>
         </AuthProvider>
-      </ProductsProvider>
+        </ProductsProvider>
+      </CategoriesProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,19 +1,15 @@
-export type ProductCategory =
-  | 'general-items'
-  | 'fruits-vegetables'
-  | 'dairy-eggs'
-  | 'staples-grains'
-  | 'oils-ghee'
-  | 'snacks-beverages'
-  | 'chocolates'
-  | 'ice-creams'
-  | 'bakery'
-  | 'instant-foods'
-  | 'dry-fruits-nuts'
-  | 'personal-care'
-  | 'home-care'
-  | 'baby-care'
-  | 'pet-care';
+/** Category id from `public.categories`. */
+export type ProductCategory = string;
+
+export interface ShopCategory {
+  id: string;
+  label: string;
+  emoji: string;
+  tint: string;
+  accent: string;
+  blurb: string;
+  sortOrder: number;
+}
 
 export interface Product {
   id: string;

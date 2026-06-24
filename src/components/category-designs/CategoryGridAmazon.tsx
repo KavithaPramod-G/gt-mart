@@ -1,55 +1,53 @@
 import { Pressable, Text, View } from 'react-native';
 
-import {
-  CATEGORY_META,
-  getCategoryLabel,
-  SHOP_CATEGORIES,
-} from '@/constants/categoryMeta';
-import { ProductCategory } from '@/types';
+import { useCategories } from '@/context/CategoriesContext';
 import { cn } from '@/utils/cn';
 
 interface CategoryGridAmazonProps {
-  selected: ProductCategory | null;
-  onSelect: (category: ProductCategory) => void;
-  counts: Partial<Record<ProductCategory, number>>;
+  selected: string | null;
+  onSelect: (category: string) => void;
+  counts: Record<string, number>;
 }
 
 /** Amazon-style 3-column icon grid — categories sit in the middle of the screen. */
 export function CategoryGridAmazon({ selected, onSelect, counts }: CategoryGridAmazonProps) {
+  const { categories, getCategoryLabel, getCategoryUi } = useCategories();
+
   return (
-    <View className="rounded-2xl bg-surface p-4">
-      <Text className="mb-3 text-base font-bold text-foreground">Shop by category</Text>
+    <View className="px-1">
       <View className="flex-row flex-wrap">
-        {SHOP_CATEGORIES.map((category) => {
-          const meta = CATEGORY_META[category];
-          const isSelected = selected === category;
-          const count = counts[category] ?? 0;
+        {categories.map((category) => {
+          const meta = getCategoryUi(category.id);
+          const isSelected = selected === category.id;
+          const count = counts[category.id];
 
           return (
             <Pressable
-              key={category}
-              onPress={() => onSelect(category)}
-              className="mb-3 w-1/3 items-center px-1"
+              key={category.id}
+              onPress={() => onSelect(category.id)}
+              className={cn(
+                'mb-3 w-1/3 items-center px-1 active:opacity-90',
+                isSelected && 'opacity-100',
+              )}
             >
               <View
                 className={cn(
-                  'mb-2 h-[72px] w-[72px] items-center justify-center rounded-2xl border-2',
-                  isSelected ? 'border-primary bg-primary-light' : 'border-transparent',
+                  'mb-1.5 h-[72px] w-[72px] items-center justify-center rounded-2xl border-2',
+                  isSelected ? 'border-primary bg-primary-light' : 'border-border bg-surface',
                 )}
-                style={{ backgroundColor: isSelected ? undefined : meta.tint }}
+                style={{ backgroundColor: isSelected ? meta.tint : undefined }}
               >
                 <Text className="text-[32px]">{meta.emoji}</Text>
               </View>
               <Text
-                className={cn(
-                  'text-center text-xs font-semibold',
-                  isSelected ? 'text-primary' : 'text-foreground',
-                )}
-                numberOfLines={1}
+                className="text-center text-[11px] font-semibold text-foreground"
+                numberOfLines={2}
               >
-                {getCategoryLabel(category)}
+                {getCategoryLabel(category.id)}
               </Text>
-              <Text className="text-[10px] text-muted">{count} items</Text>
+              {count ? (
+                <Text className="mt-0.5 text-[10px] text-muted">{count} items</Text>
+              ) : null}
             </Pressable>
           );
         })}
