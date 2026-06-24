@@ -71,6 +71,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
         id: categoryId,
         label: categoryId,
         sortOrder: 0,
+        imageUrl: null,
         ...DEFAULT_CATEGORY_UI,
       };
     },

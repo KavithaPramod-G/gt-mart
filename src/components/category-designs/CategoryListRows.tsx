@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { CategoryImage } from '@/components/CategoryImage';
 import { useCategories } from '@/context/CategoriesContext';
 import { cn } from '@/utils/cn';
 
@@ -34,11 +35,8 @@ export function CategoryListRows({ selected, onSelect, counts }: CategoryListRow
               index < categories.length - 1 && 'border-b border-border',
             )}
           >
-            <View
-              className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
-              style={{ backgroundColor: meta.tint }}
-            >
-              <Text className="text-xl">{meta.emoji}</Text>
+            <View className="mr-3 overflow-hidden rounded-xl">
+              <CategoryImage category={meta} size="sm" />
             </View>
             <View className="flex-1">
               <Text className="text-sm font-semibold text-foreground">

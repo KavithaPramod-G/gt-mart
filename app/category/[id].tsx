@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 
 import { ProductGridList } from '@/components/ProductGridList';
+import { CategoryImage } from '@/components/CategoryImage';
 import { StackBackButton } from '@/components/StackBackButton';
 import { ALL_PRODUCTS_META, isShopListingId } from '@/constants/categoryMeta';
 import { useCategories } from '@/context/CategoriesContext';
@@ -69,8 +70,8 @@ export default function CategoryProductsScreen() {
       <View className="flex-1 bg-background">
         <View className="border-b border-border bg-surface px-4 py-3">
           <View className="mb-2 flex-row items-center">
-            <Text className="mr-2 text-2xl">{meta.emoji}</Text>
-            <View className="flex-1">
+            <CategoryImage category={meta} size="md" />
+            <View className="ml-3 flex-1">
               <Text className="text-base font-bold text-foreground">{label}</Text>
               <Text className="text-xs text-muted">
                 {meta.blurb}

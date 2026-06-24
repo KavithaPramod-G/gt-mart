@@ -5,6 +5,7 @@ interface DbCategory {
   id: string;
   label: string;
   emoji: string;
+  image_url: string | null;
   tint: string;
   accent: string;
   blurb: string;
@@ -17,6 +18,7 @@ function mapCategory(row: DbCategory): ShopCategory {
     id: row.id,
     label: row.label,
     emoji: row.emoji,
+    imageUrl: row.image_url,
     tint: row.tint,
     accent: row.accent,
     blurb: row.blurb,
@@ -30,7 +32,7 @@ export async function fetchCategoriesFromDb(): Promise<ShopCategory[] | null> {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('id, label, emoji, tint, accent, blurb, sort_order, is_active')
+    .select('id, label, emoji, image_url, tint, accent, blurb, sort_order, is_active')
     .eq('is_active', true)
     .order('sort_order')
     .order('label');

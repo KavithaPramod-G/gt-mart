@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { CategoryImage } from '@/components/CategoryImage';
 import { useCategories } from '@/context/CategoriesContext';
 import { cn } from '@/utils/cn';
 
@@ -25,19 +26,16 @@ export function CategoryGridAmazon({ selected, onSelect, counts }: CategoryGridA
             <Pressable
               key={category.id}
               onPress={() => onSelect(category.id)}
-              className={cn(
-                'mb-3 w-1/3 items-center px-1 active:opacity-90',
-                isSelected && 'opacity-100',
-              )}
+              className={cn('mb-3 w-1/3 items-center px-1 active:opacity-90')}
             >
               <View
                 className={cn(
-                  'mb-1.5 h-[72px] w-[72px] items-center justify-center rounded-2xl border-2',
-                  isSelected ? 'border-primary bg-primary-light' : 'border-border bg-surface',
+                  'mb-1.5 w-full overflow-hidden rounded-2xl border-2',
+                  isSelected ? 'border-primary' : 'border-border',
                 )}
-                style={{ backgroundColor: isSelected ? meta.tint : undefined }}
+                style={{ backgroundColor: meta.tint }}
               >
-                <Text className="text-[32px]">{meta.emoji}</Text>
+                <CategoryImage category={meta} size="card" />
               </View>
               <Text
                 className="text-center text-[11px] font-semibold text-foreground"

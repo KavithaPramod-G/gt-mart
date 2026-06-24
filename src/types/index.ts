@@ -5,6 +5,7 @@ export interface ShopCategory {
   id: string;
   label: string;
   emoji: string;
+  imageUrl?: string | null;
   tint: string;
   accent: string;
   blurb: string;
