@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 
 import { ProductGridList } from '@/components/ProductGridList';
+import { CartDock, useCartDockInset } from '@/components/CartDock';
 import { CategoryImage } from '@/components/CategoryImage';
 import { StackBackButton } from '@/components/StackBackButton';
 import { ALL_PRODUCTS_META, isShopListingId } from '@/constants/categoryMeta';
@@ -29,6 +30,8 @@ export default function CategoryProductsScreen() {
       search: searchQuery,
       enabled: Boolean(listingId) && isSupabaseConfigured(),
     });
+
+  const cartDockInset = useCartDockInset();
 
   if (categoriesLoading && !listingId && id) {
     return (
@@ -100,6 +103,7 @@ export default function CategoryProductsScreen() {
             onEndReachedThreshold={0.4}
             isLoadingMore={isLoadingMore}
             hasMore={hasMore}
+            contentContainerStyle={{ paddingBottom: cartDockInset + 16 }}
             ListEmptyComponent={
               !isLoading ? (
                 <View className="items-center p-8">
@@ -109,6 +113,8 @@ export default function CategoryProductsScreen() {
             }
           />
         )}
+
+        <CartDock />
       </View>
     </>
   );
