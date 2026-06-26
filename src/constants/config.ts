@@ -1,5 +1,5 @@
 /** Replace with your shop's WhatsApp number (country code, no + or spaces). Example: 919876543210 */
-export const SHOP_WHATSAPP_NUMBER = '919705074739';
+export const SHOP_WHATSAPP_NUMBER = '919100912399';
 
 export const SHOP_NAME = 'GT Mart';
 export const SHOP_TAGLINE = 'Fresh groceries, delivered locally';
