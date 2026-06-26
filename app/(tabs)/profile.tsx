@@ -1,16 +1,70 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, Switch, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { ProfileMenuItem } from '@/components/ProfileMenuItem';
-import { SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
+import {
+  DELETE_ACCOUNT_URL,
+  PRIVACY_POLICY_URL,
+  SHOP_NAME,
+  SHOP_WHATSAPP_NUMBER,
+} from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { isPasswordAuth, isPhoneOnlyAuth } from '@/lib/env';
 import { formatPhoneDisplay } from '@/services/auth';
-import { openWhatsApp } from '@/services/whatsapp';
+import { openWhatsApp, requestAccountDeletion } from '@/services/whatsapp';
 import { confirmAction } from '@/utils/confirm';
+
+async function openLegalLink(url: string) {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert('Could not open link', 'Please try again later.');
+  }
+}
+
+function LegalMenuSection() {
+  const handlePrivacy = () => {
+    if (PRIVACY_POLICY_URL) {
+      void openLegalLink(PRIVACY_POLICY_URL);
+      return;
+    }
+    Alert.alert(
+      'Privacy policy',
+      'Set EXPO_PUBLIC_PRIVACY_POLICY_URL in your app build, or contact the shop on WhatsApp.',
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    if (DELETE_ACCOUNT_URL) {
+      void openLegalLink(DELETE_ACCOUNT_URL);
+      return;
+    }
+    await requestAccountDeletion();
+  };
+
+  return (
+    <View className="mx-4 mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
+      {PRIVACY_POLICY_URL ? (
+        <ProfileMenuItem
+          icon="document-text-outline"
+          label="Privacy policy"
+          subtitle="How we handle your data"
+          onPress={handlePrivacy}
+        />
+      ) : null}
+      <ProfileMenuItem
+        icon="trash-outline"
+        label="Delete account & data"
+        subtitle="Request removal of your account"
+        onPress={handleDeleteAccount}
+        destructive
+      />
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, isAuthenticated, logout, updateProfile } = useAuth();
@@ -18,7 +72,7 @@ export default function ProfileScreen() {
 
   if (!isAuthenticated || !user) {
     return (
-      <View className="flex-1 bg-background">
+      <ScrollView className="flex-1 bg-background" contentContainerClassName="pb-8">
         <View className="items-center bg-primary px-6 pb-8 pt-6">
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-white/20">
             <Ionicons name="person-outline" size={40} color="#FFFFFF" />
@@ -45,17 +99,13 @@ export default function ProfileScreen() {
           ) : (
             <Button label="Login with mobile number" onPress={() => router.push('/login')} />
           )}
-          <Button
-            label="Preview category layouts"
-            variant="secondary"
-            onPress={() => router.push('/category-designs')}
-            className="mt-3"
-          />
           <Text className="mt-4 text-center text-sm text-muted">
             You can still browse and checkout as a guest without logging in.
           </Text>
         </View>
-      </View>
+
+        <LegalMenuSection />
+      </ScrollView>
     );
   }
 
@@ -140,12 +190,6 @@ export default function ProfileScreen() {
           onPress={() => router.push('/edit-profile')}
         />
         <ProfileMenuItem
-          icon="grid-outline"
-          label="Category layout previews"
-          subtitle="Compare Amazon-style home screen options"
-          onPress={() => router.push('/category-designs')}
-        />
-        <ProfileMenuItem
           icon="help-circle-outline"
           label="Help & support"
           subtitle={`Chat with ${SHOP_NAME} on WhatsApp`}
@@ -160,6 +204,8 @@ export default function ProfileScreen() {
           showChevron={false}
         />
       </View>
+
+      <LegalMenuSection />
     </ScrollView>
   );
 }

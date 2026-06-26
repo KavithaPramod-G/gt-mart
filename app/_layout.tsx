@@ -10,14 +10,12 @@ import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { OrderProvider } from '@/context/OrderContext';
 import { CategoriesProvider } from '@/context/CategoriesContext';
-import { ProductsProvider } from '@/context/ProductsContext';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView className="flex-1">
       <CategoriesProvider>
-        <ProductsProvider>
-          <AuthProvider>
+        <AuthProvider>
           <CartProvider>
             <OrderProvider>
               <StatusBar style="dark" />
@@ -58,15 +56,10 @@ export default function RootLayout() {
                   name="category/[id]"
                   options={{ title: 'Products' }}
                 />
-                <Stack.Screen
-                  name="category-designs"
-                  options={{ title: 'Category Layouts' }}
-                />
               </Stack>
             </OrderProvider>
           </CartProvider>
         </AuthProvider>
-        </ProductsProvider>
       </CategoriesProvider>
     </GestureHandlerRootView>
   );

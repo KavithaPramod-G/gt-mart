@@ -7,27 +7,18 @@ type CategoryImageSource = Pick<ShopCategory, 'emoji' | 'imageUrl' | 'label'>;
 
 interface CategoryImageProps {
   category: CategoryImageSource;
-  size?: 'sm' | 'md' | 'card' | 'hero';
+  size?: 'md' | 'hero';
   /** Known frame width — scales emoji fallback to match photo cards */
   frameWidth?: number;
 }
 
-const fixedSizes = {
-  sm: 40,
-  md: 56,
-} as const;
+const MD_SIZE = 56;
 
-const CARD_ASPECT = 1.6;
-
-function getEmojiFontSize(size: 'hero' | 'card' | 'sm' | 'md', frameWidth: number): number {
+function getEmojiFontSize(size: 'hero' | 'md', frameWidth: number): number {
   if (size === 'hero') {
     return Math.round(frameWidth * 0.58);
   }
-  if (size === 'card') {
-    const frameHeight = frameWidth / CARD_ASPECT;
-    return Math.round(Math.min(frameWidth, frameHeight) * 0.55);
-  }
-  return size === 'sm' ? 22 : 30;
+  return 30;
 }
 
 function getImageUri(imageUrl?: string | null): string | null {
@@ -96,37 +87,14 @@ export function CategoryImage({ category, size = 'md', frameWidth }: CategoryIma
     );
   }
 
-  if (size === 'card') {
-    return (
-      <View
-        style={styles.cardFrame}
-        className="overflow-hidden rounded-xl bg-white/60"
-        onLayout={onFrameLayout}
-      >
-        {showPhoto ? (
-          <Image
-            source={{ uri: uri! }}
-            accessibilityLabel={category.label}
-            style={styles.cardImage}
-            resizeMode="contain"
-            onError={() => setLoadFailed(true)}
-          />
-        ) : (
-          <EmojiFallback emoji={emoji} fontSize={emojiSize} style={styles.cardFallback} />
-        )}
-      </View>
-    );
-  }
-
-  const dimension = fixedSizes[size];
   const frameStyle: ViewStyle = {
-    width: dimension,
-    height: dimension,
+    width: MD_SIZE,
+    height: MD_SIZE,
     borderRadius: 12,
     overflow: 'hidden',
   };
-  const imageStyle: ImageStyle = { width: dimension, height: dimension };
-  const fixedEmojiSize = getEmojiFontSize(size, dimension);
+  const imageStyle: ImageStyle = { width: MD_SIZE, height: MD_SIZE };
+  const fixedEmojiSize = getEmojiFontSize('md', MD_SIZE);
 
   if (showPhoto) {
     return (
@@ -162,18 +130,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#F7F9F8',
-  },
-  cardFrame: {
-    width: '100%',
-    aspectRatio: CARD_ASPECT,
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-  },
-  cardFallback: {
-    width: '100%',
-    height: '100%',
   },
   emojiFallback: {
     width: '100%',

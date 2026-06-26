@@ -7,6 +7,12 @@ export const DELIVERY_FEE = 0;
 export const MIN_ORDER_AMOUNT = 500;
 export const CURRENCY = '₹';
 
+/** Public legal pages (set in .env / eas.json after admin is deployed). */
+export const PRIVACY_POLICY_URL =
+  process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() ?? '';
+export const DELETE_ACCOUNT_URL =
+  process.env.EXPO_PUBLIC_DELETE_ACCOUNT_URL?.trim() ?? '';
+
 export const ORDER_STATUS_LABELS: Record<
   import('@/types').OrderStatus,
   string

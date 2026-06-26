@@ -98,3 +98,8 @@ export async function notifyShopStatusUpdate(
 
   return openWhatsApp(SHOP_WHATSAPP_NUMBER, message);
 }
+
+export async function requestAccountDeletion(): Promise<boolean> {
+  const message = `Hi ${SHOP_NAME}, I would like to request deletion of my GT Mart app account and associated personal data. My registered mobile number is: `;
+  return openWhatsApp(SHOP_WHATSAPP_NUMBER, message);
+}
