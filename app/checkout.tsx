@@ -22,12 +22,21 @@ import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { formatPhoneDisplay } from '@/services/auth';
 import { DeliveryAddress } from '@/types';
+import { cn } from '@/utils/cn';
+
+function fieldBorderClass(hasError: boolean) {
+  return cn(
+    'rounded-xl border bg-background px-4 py-2.5 text-[15px] text-foreground',
+    hasError ? 'border-2 border-error' : 'border border-border',
+  );
+}
 
 export default function CheckoutScreen() {
   const { items, subtotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showFieldErrors, setShowFieldErrors] = useState(false);
   const [form, setForm] = useState<DeliveryAddress>({
     name: '',
     phone: '',
@@ -56,12 +65,27 @@ export default function CheckoutScreen() {
     form.addressLine.trim().length > 5 &&
     subtotal >= MIN_ORDER_AMOUNT;
 
+  const nameEmpty = form.name.trim().length === 0;
+  const phoneEmpty = form.phone.trim().length === 0;
+  const addressEmpty = form.addressLine.trim().length === 0;
+
+  const showNameError = showFieldErrors && nameEmpty;
+  const showPhoneError = showFieldErrors && phoneEmpty;
+  const showAddressError = showFieldErrors && addressEmpty;
+
   const updateField = (field: keyof DeliveryAddress, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const handlePlaceOrder = async () => {
-    if (!isValid) return;
+    if (subtotal < MIN_ORDER_AMOUNT) {
+      return;
+    }
+
+    if (!isValid) {
+      setShowFieldErrors(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -116,20 +140,20 @@ export default function CheckoutScreen() {
             placeholder="Full name"
             value={form.name}
             onChangeText={(value) => updateField('name', value)}
-            className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+            className={cn('mb-2', fieldBorderClass(showNameError))}
           />
           <TextInput
             placeholder="WhatsApp / phone number"
             keyboardType="phone-pad"
             value={form.phone}
             onChangeText={(value) => updateField('phone', value)}
-            className="mb-2 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+            className={cn('mb-2', fieldBorderClass(showPhoneError))}
           />
           <TextInput
             placeholder="Delivery address"
             value={form.addressLine}
             onChangeText={(value) => updateField('addressLine', value)}
-            className="mb-2 min-h-20 rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+            className={cn('mb-2 min-h-20', fieldBorderClass(showAddressError))}
             multiline
             textAlignVertical="top"
           />
@@ -194,7 +218,7 @@ export default function CheckoutScreen() {
         <Button
           label={`Place Order · ${CURRENCY}${total}`}
           loading={loading}
-          disabled={!isValid}
+          disabled={loading || subtotal < MIN_ORDER_AMOUNT}
           onPress={handlePlaceOrder}
         />
       </View>
