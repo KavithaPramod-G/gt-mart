@@ -44,22 +44,37 @@ export function Button({
   ...props
 }: ButtonProps) {
   const styles = variantClasses[variant];
+  const isDisabled = Boolean(disabled || loading);
+  const useMutedDisabledStyle =
+    isDisabled && (variant === 'primary' || variant === 'whatsapp');
 
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled || loading}
+      disabled={isDisabled}
       className={cn(
-        'min-h-12 items-center justify-center rounded-xl px-4 active:opacity-85 disabled:opacity-50',
-        styles.container,
+        'min-h-12 items-center justify-center rounded-xl px-4 active:opacity-85',
+        useMutedDisabledStyle ? 'bg-primary-light' : styles.container,
+        isDisabled && !useMutedDisabledStyle && 'opacity-50',
         className,
       )}
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? '#1B7A4E' : '#FFFFFF'} />
+        <ActivityIndicator
+          color={
+            variant === 'secondary' || useMutedDisabledStyle ? '#1B7A4E' : '#FFFFFF'
+          }
+        />
       ) : (
-        <Text className={cn('text-base font-semibold', styles.text)}>{label}</Text>
+        <Text
+          className={cn(
+            'text-base font-semibold',
+            useMutedDisabledStyle ? 'text-primary' : styles.text,
+          )}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );

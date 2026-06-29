@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import {
@@ -24,14 +25,16 @@ import { formatPhoneDisplay } from '@/services/auth';
 import { DeliveryAddress } from '@/types';
 import { cn } from '@/utils/cn';
 
-function fieldBorderClass(hasError: boolean) {
+function fieldBorderClass(hasError: boolean, multiline = false) {
   return cn(
-    'rounded-xl border bg-background px-4 py-2.5 text-[15px] text-foreground',
+    'rounded-xl border bg-background px-4 text-[15px] text-foreground',
+    multiline ? 'min-h-20 py-3' : 'min-h-[48px] py-3',
     hasError ? 'border-2 border-error' : 'border border-border',
   );
 }
 
 export default function CheckoutScreen() {
+  const insets = useSafeAreaInsets();
   const { items, subtotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
   const { user, isAuthenticated } = useAuth();
@@ -59,6 +62,7 @@ export default function CheckoutScreen() {
   }, [user]);
 
   const total = subtotal + DELIVERY_FEE;
+  const meetsMinimum = subtotal >= MIN_ORDER_AMOUNT;
   const isValid =
     form.name.trim().length > 0 &&
     form.phone.trim().length >= 10 &&
@@ -111,7 +115,11 @@ export default function CheckoutScreen() {
       className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+      >
         {isAuthenticated && user ? (
           <View className="mb-4 rounded-xl border border-[#B8E6C8] bg-[#E8F8EE] p-4">
             <Text className="text-sm font-semibold text-primary">Logged in</Text>
@@ -141,6 +149,7 @@ export default function CheckoutScreen() {
             value={form.name}
             onChangeText={(value) => updateField('name', value)}
             className={cn('mb-2', fieldBorderClass(showNameError))}
+            textAlignVertical="center"
           />
           <TextInput
             placeholder="WhatsApp / phone number"
@@ -148,12 +157,13 @@ export default function CheckoutScreen() {
             value={form.phone}
             onChangeText={(value) => updateField('phone', value)}
             className={cn('mb-2', fieldBorderClass(showPhoneError))}
+            textAlignVertical="center"
           />
           <TextInput
             placeholder="Delivery address"
             value={form.addressLine}
             onChangeText={(value) => updateField('addressLine', value)}
-            className={cn('mb-2 min-h-20', fieldBorderClass(showAddressError))}
+            className={cn('mb-2', fieldBorderClass(showAddressError, true))}
             multiline
             textAlignVertical="top"
           />
@@ -161,7 +171,8 @@ export default function CheckoutScreen() {
             placeholder="Landmark (optional)"
             value={form.landmark}
             onChangeText={(value) => updateField('landmark', value)}
-            className="rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+            className={fieldBorderClass(false)}
+            textAlignVertical="center"
           />
         </View>
 
@@ -214,13 +225,23 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      <View className="border-t border-border bg-surface p-4">
+      <View
+        className="border-t border-border bg-surface px-4 pt-4"
+        style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+      >
         <Button
           label={`Place Order · ${CURRENCY}${total}`}
           loading={loading}
-          disabled={loading || subtotal < MIN_ORDER_AMOUNT}
+          disabled={loading || !meetsMinimum}
           onPress={handlePlaceOrder}
         />
+        {!meetsMinimum ? (
+          <Text className="mt-2 text-center text-sm text-error">
+            Minimum order is {CURRENCY}
+            {MIN_ORDER_AMOUNT}. Add {CURRENCY}
+            {MIN_ORDER_AMOUNT - subtotal} more to checkout.
+          </Text>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );
