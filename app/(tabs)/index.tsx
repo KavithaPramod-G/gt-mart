@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryHeroCards } from '@/components/CategoryHeroCards';
 import { ProductGridList } from '@/components/ProductGridList';
-import { SHOP_TAGLINE } from '@/constants/config';
+import { APP_NAME, SHOP_LOCATION, SHOP_TAGLINE } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
 
@@ -32,8 +32,10 @@ export default function ShopScreen() {
         className="bg-primary px-4 pb-4"
         style={{ paddingTop: insets.top + 16 }}
       >
-        <Text className="text-[28px] font-extrabold text-white">GT Mart</Text>
-        <Text className="mb-4 mt-1 text-sm text-primary-light">{SHOP_TAGLINE}</Text>
+        <Text className="text-[28px] font-extrabold text-white">{APP_NAME}</Text>
+        <Text className="mb-4 mt-1 text-sm text-primary-light">
+          {SHOP_LOCATION} · {SHOP_TAGLINE}
+        </Text>
         <TextInput
           placeholder="Search groceries..."
           placeholderTextColor="#5C6B63"

@@ -63,6 +63,9 @@ export default function CheckoutScreen() {
 
   const total = subtotal + DELIVERY_FEE;
   const meetsMinimum = subtotal >= MIN_ORDER_AMOUNT;
+  // Some Motorola / 3-button nav devices report insets.bottom as 0
+  const footerBottomPad =
+    insets.bottom > 0 ? insets.bottom : Platform.OS === 'android' ? 48 : 16;
   const isValid =
     form.name.trim().length > 0 &&
     form.phone.trim().length >= 10 &&
@@ -227,7 +230,7 @@ export default function CheckoutScreen() {
 
       <View
         className="border-t border-border bg-surface px-4 pt-4"
-        style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+        style={{ paddingBottom: footerBottomPad }}
       >
         <Button
           label={`Place Order · ${CURRENCY}${total}`}

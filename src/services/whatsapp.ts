@@ -100,6 +100,6 @@ export async function notifyShopStatusUpdate(
 }
 
 export async function requestAccountDeletion(): Promise<boolean> {
-  const message = `Hi ${SHOP_NAME}, I would like to request deletion of my GT Mart app account and associated personal data. My registered mobile number is: `;
+  const message = `Hi ${SHOP_NAME}, I would like to request deletion of my ${SHOP_NAME} app account and associated personal data. My registered mobile number is: `;
   return openWhatsApp(SHOP_WHATSAPP_NUMBER, message);
 }

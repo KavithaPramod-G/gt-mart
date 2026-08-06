@@ -4,7 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { CartItemRow } from '@/components/CartItemRow';
 import { EmptyState } from '@/components/EmptyState';
-import { CURRENCY, DELIVERY_FEE, MIN_ORDER_AMOUNT } from '@/constants/config';
+import { APP_NAME, CURRENCY, DELIVERY_FEE, MIN_ORDER_AMOUNT } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
 
 export default function CartScreen() {
@@ -17,7 +17,7 @@ export default function CartScreen() {
       <EmptyState
         emoji="🛒"
         title="Your cart is empty"
-        description="Browse GT Mart and add fresh groceries to get started."
+        description={`Browse ${APP_NAME} and add fresh groceries to get started.`}
       />
     );
   }

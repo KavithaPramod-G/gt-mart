@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GT Mart",
+    "name": "RR Basket",
     "slug": "gt-mart",
     "owner": "gtmart-kvl",
     "version": "1.0.0",
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E8B923",
+        "backgroundColor": "#E8F5EE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png"
       },

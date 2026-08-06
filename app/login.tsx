@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { APP_NAME } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { isPasswordAuth, isPhoneOnlyAuth } from '@/lib/env';
 import { isValidIndianMobile, isValidPassword } from '@/services/auth';
@@ -120,7 +121,7 @@ export default function LoginScreen() {
           </Pressable>
           <Pressable className="mt-4" onPress={() => router.push('/signup')}>
             <Text className="text-center text-sm text-muted">
-              New to GT Mart?{' '}
+              New to {APP_NAME}?{' '}
               <Text className="font-semibold text-primary">Create an account</Text>
             </Text>
           </Pressable>
@@ -203,7 +204,7 @@ function LegacyLoginScreen() {
     >
       <ScrollView contentContainerClassName="flex-grow p-4 pb-8">
         <View className="mb-6 rounded-2xl bg-primary p-6">
-          <Text className="text-2xl font-extrabold text-white">Welcome to GT Mart</Text>
+          <Text className="text-2xl font-extrabold text-white">Welcome to {APP_NAME}</Text>
           <Text className="mt-2 text-sm leading-5 text-primary-light">
             Login with your mobile number for orders and WhatsApp delivery updates.
           </Text>

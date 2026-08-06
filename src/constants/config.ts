@@ -1,7 +1,9 @@
 /** Replace with your shop's WhatsApp number (country code, no + or spaces). Example: 919876543210 */
 export const SHOP_WHATSAPP_NUMBER = '919100912399';
 
-export const SHOP_NAME = 'GT Mart';
+export const APP_NAME = 'RR Basket';
+export const SHOP_NAME = 'RR Basket';
+export const SHOP_LOCATION = 'GT Mart · Kavali';
 export const SHOP_TAGLINE = 'Fresh groceries, delivered locally';
 export const DELIVERY_FEE = 0;
 export const MIN_ORDER_AMOUNT = 500;

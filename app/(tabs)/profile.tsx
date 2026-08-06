@@ -6,6 +6,7 @@ import { Alert, Linking, ScrollView, Switch, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { ProfileMenuItem } from '@/components/ProfileMenuItem';
 import {
+  APP_NAME,
   DELETE_ACCOUNT_URL,
   PRIVACY_POLICY_URL,
   SHOP_NAME,
@@ -77,7 +78,7 @@ export default function ProfileScreen() {
           <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-white/20">
             <Ionicons name="person-outline" size={40} color="#FFFFFF" />
           </View>
-          <Text className="text-xl font-bold text-white">Your GT Mart account</Text>
+          <Text className="text-xl font-bold text-white">Your {APP_NAME} account</Text>
           <Text className="mt-2 text-center text-sm text-primary-light">
             {isPasswordAuth()
               ? 'Sign up or log in to save your address and track orders.'
@@ -149,7 +150,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Text className="text-xl font-bold text-white">
-          {user.name?.trim() || 'GT Mart customer'}
+          {user.name?.trim() || `${APP_NAME} customer`}
         </Text>
         <Text className="mt-1 text-sm text-primary-light">
           {formatPhoneDisplay(user.phone)}
