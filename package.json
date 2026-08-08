@@ -32,7 +32,15 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "env:staging": "powershell -ExecutionPolicy Bypass -File supabase/scripts/use-environment.ps1 -Target staging",
+    "env:production": "powershell -ExecutionPolicy Bypass -File supabase/scripts/use-environment.ps1 -Target production",
+    "db:staging:bootstrap": "powershell -ExecutionPolicy Bypass -File supabase/scripts/apply-database.ps1 -Environment staging -Mode bootstrap",
+    "db:staging:sync": "powershell -ExecutionPolicy Bypass -File supabase/scripts/apply-database.ps1 -Environment staging -Mode sync",
+    "db:staging:verify": "node supabase/scripts/verify-production.mjs staging",
+    "db:production:sync": "powershell -ExecutionPolicy Bypass -File supabase/scripts/apply-database.ps1 -Environment production -Mode sync",
+    "db:production:verify": "node supabase/scripts/verify-production.mjs production",
+    "db:push": "npx supabase db push"
   },
   "private": true
 }
