@@ -220,7 +220,7 @@ export default function CheckoutScreen() {
             <Text className="text-[15px] font-bold text-primary">{PAYMENT_METHOD_LABELS.upi}</Text>
             <Text className="mt-1 text-sm leading-5 text-muted">
               {isShopUpiConfigured()
-                ? `Pay ${CURRENCY}${total} via GPay or PhonePe after placing the order, then upload a payment screenshot.`
+                ? `Pay ${CURRENCY}${total} via GPay or PhonePe after placing the order, then share payment details on WhatsApp.`
                 : 'Online UPI payment will be available soon. Use cash on delivery for now.'}
             </Text>
             {paymentMethod === 'upi' && isShopUpiConfigured() ? (

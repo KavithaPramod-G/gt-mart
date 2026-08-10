@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 import { SHOP_UPI_ID, SHOP_UPI_PAYEE_NAME } from '@/constants/config';
 
@@ -8,16 +8,38 @@ export interface UpiPaymentParams {
   orderNumber: string;
 }
 
-function buildUpiQuery(params: UpiPaymentParams): string {
-  const amount = params.amount.toFixed(2);
-  const note = encodeURIComponent(`Order ${params.orderNumber}`);
-  const payee = encodeURIComponent(SHOP_UPI_PAYEE_NAME);
-  const pa = encodeURIComponent(SHOP_UPI_ID);
-  return `pa=${pa}&pn=${payee}&am=${amount}&cu=INR&tn=${note}`;
+/** Raw query string for UPI pay intents (pa, pn, am, cu, tn). */
+function buildUpiQueryString(params: UpiPaymentParams): string {
+  const search = new URLSearchParams({
+    pa: SHOP_UPI_ID,
+    pn: SHOP_UPI_PAYEE_NAME,
+    am: params.amount.toFixed(2),
+    cu: 'INR',
+    tn: `Order ${params.orderNumber}`,
+  });
+  return search.toString();
 }
 
 export function isShopUpiConfigured(): boolean {
   return SHOP_UPI_ID.length > 0;
+}
+
+async function tryOpenPaymentUrl(url: string): Promise<boolean> {
+  try {
+    await Linking.openURL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function buildAndroidIntentUrl(query: string, packageName?: string): string {
+  const packageSuffix = packageName ? `;package=${packageName}` : '';
+  return `intent://pay?${query}#Intent;scheme=upi${packageSuffix};end`;
+}
+
+function manualPayMessage(amount: number): string {
+  return `Could not open a UPI app automatically. Pay ₹${amount} to ${SHOP_UPI_ID} (${SHOP_UPI_PAYEE_NAME}) in GPay or PhonePe, then upload the payment screenshot in this app.`;
 }
 
 export async function openUpiPaymentChooser(params: UpiPaymentParams): Promise<boolean> {
@@ -29,65 +51,74 @@ export async function openUpiPaymentChooser(params: UpiPaymentParams): Promise<b
     return false;
   }
 
-  const query = buildUpiQuery(params);
-  const url = `upi://pay?${query}`;
+  const query = buildUpiQueryString(params);
+  const urls =
+    Platform.OS === 'android'
+      ? [
+          buildAndroidIntentUrl(query),
+          `upi://pay?${query}`,
+        ]
+      : [`upi://pay?${query}`];
 
-  try {
-    const supported = await Linking.canOpenURL(url);
-    if (!supported) {
-      Alert.alert(
-        'UPI app not found',
-        `Pay manually to ${SHOP_UPI_ID} and upload the payment screenshot below.`,
-      );
-      return false;
+  for (const url of urls) {
+    if (await tryOpenPaymentUrl(url)) {
+      return true;
     }
-    await Linking.openURL(url);
-    return true;
-  } catch {
-    Alert.alert(
-      'Could not open UPI',
-      `Pay ${params.amount} to ${SHOP_UPI_ID} in GPay or PhonePe, then upload the screenshot.`,
-    );
-    return false;
   }
+
+  Alert.alert('Open UPI app manually', manualPayMessage(params.amount));
+  return false;
 }
 
 export async function openGPay(params: UpiPaymentParams): Promise<boolean> {
-  if (!isShopUpiConfigured()) return openUpiPaymentChooser(params);
+  if (!isShopUpiConfigured()) {
+    return openUpiPaymentChooser(params);
+  }
 
-  const query = buildUpiQuery(params);
-  const urls = [`tez://upi/pay?${query}`, `gpay://upi/pay?${query}`, `upi://pay?${query}`];
+  const query = buildUpiQueryString(params);
+  const urls =
+    Platform.OS === 'android'
+      ? [
+          buildAndroidIntentUrl(query, 'com.google.android.apps.nbu.paisa.user'),
+          `tez://upi/pay?${query}`,
+          `gpay://upi/pay?${query}`,
+          buildAndroidIntentUrl(query),
+          `upi://pay?${query}`,
+        ]
+      : [`tez://upi/pay?${query}`, `gpay://upi/pay?${query}`, `upi://pay?${query}`];
 
   for (const url of urls) {
-    try {
-      if (await Linking.canOpenURL(url)) {
-        await Linking.openURL(url);
-        return true;
-      }
-    } catch {
-      // try next scheme
+    if (await tryOpenPaymentUrl(url)) {
+      return true;
     }
   }
 
-  return openUpiPaymentChooser(params);
+  Alert.alert('Could not open GPay', manualPayMessage(params.amount));
+  return false;
 }
 
 export async function openPhonePe(params: UpiPaymentParams): Promise<boolean> {
-  if (!isShopUpiConfigured()) return openUpiPaymentChooser(params);
+  if (!isShopUpiConfigured()) {
+    return openUpiPaymentChooser(params);
+  }
 
-  const query = buildUpiQuery(params);
-  const urls = [`phonepe://pay?${query}`, `upi://pay?${query}`];
+  const query = buildUpiQueryString(params);
+  const urls =
+    Platform.OS === 'android'
+      ? [
+          buildAndroidIntentUrl(query, 'com.phonepe.app'),
+          `phonepe://pay?${query}`,
+          buildAndroidIntentUrl(query),
+          `upi://pay?${query}`,
+        ]
+      : [`phonepe://pay?${query}`, `upi://pay?${query}`];
 
   for (const url of urls) {
-    try {
-      if (await Linking.canOpenURL(url)) {
-        await Linking.openURL(url);
-        return true;
-      }
-    } catch {
-      // try next scheme
+    if (await tryOpenPaymentUrl(url)) {
+      return true;
     }
   }
 
-  return openUpiPaymentChooser(params);
+  Alert.alert('Could not open PhonePe', manualPayMessage(params.amount));
+  return false;
 }

@@ -41,10 +41,50 @@ function formatAddress(address: DeliveryAddress): string {
   return `${address.name}\n${address.phone}\n${address.addressLine}${landmark}`;
 }
 
+export function buildUpiPaymentProofMessage(
+  order: Order,
+  upiReference?: string,
+): string {
+  const txnId = upiReference?.trim();
+  const lines = [
+    `✅ *UPI Payment - ${SHOP_NAME}*`,
+    ``,
+    `*Order No:* ${order.orderNumber}`,
+    `*Amount paid:* ${CURRENCY}${order.total}`,
+    `*Customer:* ${order.address.name}`,
+    `*Phone:* ${order.address.phone}`,
+  ];
+
+  if (txnId) {
+    lines.push(`*UPI transaction ID:* ${txnId}`);
+  } else {
+    lines.push(`*UPI transaction ID:* (add here if you have it)`);
+  }
+
+  lines.push(
+    ``,
+    `I have completed the UPI payment for this order. Please verify and confirm.`,
+    ``,
+    `Please attach a payment screenshot in this chat if possible.`,
+  );
+
+  return lines.join('\n');
+}
+
+export async function notifyShopUpiPayment(
+  order: Order,
+  upiReference?: string,
+): Promise<boolean> {
+  return openWhatsApp(
+    SHOP_WHATSAPP_NUMBER,
+    buildUpiPaymentProofMessage(order, upiReference),
+  );
+}
+
 export function buildOrderPlacedMessage(order: Order): string {
   const paymentLabel =
     order.paymentMethod === 'upi'
-      ? 'UPI (GPay / PhonePe) — screenshot pending verification'
+      ? 'UPI (GPay / PhonePe) — share payment proof on WhatsApp after paying'
       : PAYMENT_METHOD_LABELS.cod;
 
   return [

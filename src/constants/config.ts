@@ -35,6 +35,15 @@ export const ORDER_PAYMENT_STATUS_LABELS: Record<
   verified: 'Payment received',
 };
 
+/** Short labels for order list cards. */
+export const ORDER_PAYMENT_SHORT_LABELS: Record<
+  import('@/types').OrderPaymentStatus,
+  string
+> = {
+  pending: 'Unpaid',
+  verified: 'Paid',
+};
+
 export const PAYMENT_METHOD_LABELS: Record<import('@/types').PaymentMethod, string> = {
   cod: 'Cash on delivery',
   upi: 'Pay online (GPay / PhonePe)',

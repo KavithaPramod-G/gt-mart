@@ -6,7 +6,7 @@ import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
 import { OrderStatusHistory } from '@/components/OrderStatusHistory';
 import { UpiPaymentSection } from '@/components/UpiPaymentSection';
-import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, SHOP_NAME } from '@/constants/config';
+import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { useOrders } from '@/context/OrderContext';
 
@@ -29,11 +29,12 @@ export default function OrderDetailScreen() {
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="p-4 pb-8">
       <View className="mb-4 items-center rounded-2xl border border-border bg-surface p-6">
-        <Ionicons name="checkmark-circle" size={48} color="#1B7A4E" />
-        <Text className="mt-2 text-lg font-bold text-foreground">Order placed successfully</Text>
-        <Text className="mt-1 text-[22px] font-extrabold text-primary">{order.orderNumber}</Text>
+        <Ionicons name="receipt-outline" size={48} color="#1B7A4E" />
+        <Text className="mt-2 text-lg font-bold text-foreground">{order.orderNumber}</Text>
         <Text className="mt-2 text-center leading-5 text-muted">
-          {SHOP_NAME} received your order via WhatsApp. Track updates below.
+          {order.paymentMethod === 'upi' && order.paymentStatus !== 'verified'
+            ? 'Pay with GPay or PhonePe below, then share payment details on WhatsApp. Track delivery updates here.'
+            : 'Track delivery updates, payment status, and full order history below.'}
         </Text>
       </View>
 

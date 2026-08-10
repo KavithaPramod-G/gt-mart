@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { ProductGridList } from '@/components/ProductGridList';
+import { SearchInput } from '@/components/SearchInput';
 import { CartDock, useCartDockInset } from '@/components/CartDock';
 import { CategoryImage } from '@/components/CategoryImage';
 import { StackBackButton } from '@/components/StackBackButton';
@@ -82,12 +83,12 @@ export default function CategoryProductsScreen() {
               </Text>
             </View>
           </View>
-          <TextInput
+          <SearchInput
             placeholder={searchPlaceholder}
             placeholderTextColor="#5C6B63"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            className="rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground"
+            inputClassName="border border-border bg-background"
           />
         </View>
 

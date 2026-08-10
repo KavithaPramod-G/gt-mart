@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryHeroCards } from '@/components/CategoryHeroCards';
+import { SearchInput } from '@/components/SearchInput';
 import { ProductGridList } from '@/components/ProductGridList';
 import { APP_NAME, SHOP_LOCATION, SHOP_TAGLINE } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -36,14 +31,13 @@ export default function ShopScreen() {
         <Text className="mb-4 mt-1 text-sm text-primary-light">
           {SHOP_LOCATION} · {SHOP_TAGLINE}
         </Text>
-        <TextInput
+        <SearchInput
           placeholder="Search groceries..."
           placeholderTextColor="#5C6B63"
           value={searchQuery}
           onChangeText={setSearchQuery}
-          className="rounded-xl bg-surface px-4 py-2.5 text-[15px] text-foreground"
+          inputClassName="bg-surface"
           returnKeyType="search"
-          clearButtonMode="while-editing"
         />
         {isSupabaseConfigured() ? (
           <Text className="mt-2 text-xs text-primary-light">Live catalog from database</Text>
