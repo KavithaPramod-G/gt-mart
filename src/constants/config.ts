@@ -34,6 +34,15 @@ export const ORDER_PAYMENT_STATUS_LABELS: Record<
   verified: 'Payment received',
 };
 
+export const PAYMENT_METHOD_LABELS: Record<import('@/types').PaymentMethod, string> = {
+  cod: 'Cash on delivery',
+  upi: 'Pay online (GPay / PhonePe)',
+};
+
+/** Shop UPI ID for online payments (set EXPO_PUBLIC_SHOP_UPI_ID in eas.json). */
+export const SHOP_UPI_ID = process.env.EXPO_PUBLIC_SHOP_UPI_ID?.trim() ?? '';
+export const SHOP_UPI_PAYEE_NAME = process.env.EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME?.trim() || SHOP_NAME;
+
 /** Local fallback OTP when Supabase is not configured */
 export const DEV_MOCK_OTP = '123456';
 export const MIN_PASSWORD_LENGTH = 6;

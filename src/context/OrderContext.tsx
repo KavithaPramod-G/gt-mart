@@ -14,6 +14,7 @@ import { DELIVERY_FEE } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/env';
 import {
+  fetchOrderByPhoneAndId,
   fetchOrdersBySession,
   placeOrderInDb,
 } from '@/services/api/ordersApi';
@@ -24,7 +25,7 @@ import {
   notifyShopNewOrder,
 } from '@/services/whatsapp';
 import { normalizePhone } from '@/services/auth';
-import { CartItem, DeliveryAddress, Order, OrderStatus } from '@/types';
+import { CartItem, DeliveryAddress, Order, OrderStatus, PaymentMethod } from '@/types';
 
 const ORDERS_STORAGE_KEY = '@gt_mart_orders';
 
@@ -43,11 +44,16 @@ function isUuid(value: string): boolean {
 interface OrderContextValue {
   orders: Order[];
   isLoaded: boolean;
-  placeOrder: (items: CartItem[], address: DeliveryAddress) => Promise<Order>;
+  placeOrder: (
+    items: CartItem[],
+    address: DeliveryAddress,
+    paymentMethod?: PaymentMethod,
+  ) => Promise<Order>;
   getOrder: (id: string) => Order | undefined;
   advanceOrderStatus: (orderId: string) => Promise<Order | undefined>;
   sendWhatsAppUpdate: (orderId: string, status?: OrderStatus) => Promise<boolean>;
   refreshOrders: () => Promise<void>;
+  refreshOrderFromServer: (orderId: string) => Promise<Order | undefined>;
 }
 
 const OrderContext = createContext<OrderContextValue | null>(null);
@@ -104,7 +110,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   );
 
   const placeOrderLocal = useCallback(
-    (items: CartItem[], address: DeliveryAddress): Order => {
+    (items: CartItem[], address: DeliveryAddress, paymentMethod: PaymentMethod): Order => {
       const subtotal = items.reduce(
         (total, item) => total + item.product.price * item.quantity,
         0,
@@ -131,7 +137,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         subtotal,
         deliveryFee: DELIVERY_FEE,
         total: subtotal + DELIVERY_FEE,
-        paymentMethod: 'cod',
+        paymentMethod,
         paymentStatus: 'pending',
         address: normalizedAddress,
         status: 'placed',
@@ -149,7 +155,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 subtotal,
                 deliveryFee: DELIVERY_FEE,
                 total: subtotal + DELIVERY_FEE,
-                paymentMethod: 'cod',
+                paymentMethod,
                 paymentStatus: 'pending',
                 address: normalizedAddress,
                 status: 'placed',
@@ -169,15 +175,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   );
 
   const placeOrder = useCallback(
-    async (items: CartItem[], address: DeliveryAddress): Promise<Order> => {
+    async (
+      items: CartItem[],
+      address: DeliveryAddress,
+      paymentMethod: PaymentMethod = 'cod',
+    ): Promise<Order> => {
       let order: Order | null = null;
 
       if (isSupabaseConfigured()) {
-        order = await placeOrderInDb(items, address, user?.id);
+        order = await placeOrderInDb(items, address, user?.id, paymentMethod);
       }
 
       if (!order) {
-        order = placeOrderLocal(items, address);
+        order = placeOrderLocal(items, address, paymentMethod);
         setOrders((current) => [order!, ...current]);
         if (!isSupabaseConfigured()) {
           await AsyncStorage.setItem(
@@ -244,6 +254,25 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     [orders],
   );
 
+  const refreshOrderFromServer = useCallback(
+    async (orderId: string): Promise<Order | undefined> => {
+      const existing = orders.find((order) => order.id === orderId);
+      if (!existing || !isSupabaseConfigured() || !isUuid(orderId)) {
+        return existing;
+      }
+
+      const remote = await fetchOrderByPhoneAndId(existing.address.phone, orderId);
+      if (!remote) return existing;
+
+      setOrders((current) =>
+        current.map((order) => (order.id === orderId ? remote : order)),
+      );
+      await refreshOrders();
+      return remote;
+    },
+    [orders, refreshOrders],
+  );
+
   const sendWhatsAppUpdate = useCallback(
     async (orderId: string, status?: OrderStatus): Promise<boolean> => {
       const order = orders.find((entry) => entry.id === orderId);
@@ -264,6 +293,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       advanceOrderStatus,
       sendWhatsAppUpdate,
       refreshOrders,
+      refreshOrderFromServer,
     }),
     [
       orders,
@@ -273,6 +303,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       advanceOrderStatus,
       sendWhatsAppUpdate,
       refreshOrders,
+      refreshOrderFromServer,
     ],
   );
 

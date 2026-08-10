@@ -9,6 +9,7 @@ import {
   OrderItem,
   OrderPaymentStatus,
   OrderStatus,
+  PaymentMethod,
   WhatsAppNotification,
 } from '@/types';
 
@@ -26,6 +27,8 @@ interface DbOrderPayload {
   payment_method: string;
   payment_status?: OrderPaymentStatus;
   payment_note?: string | null;
+  payment_proof_url?: string | null;
+  payment_upi_reference?: string | null;
   status: OrderStatus;
   created_at: string;
   updated_at: string;
@@ -58,9 +61,11 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
     subtotal: Number(payload.subtotal),
     deliveryFee: Number(payload.delivery_fee),
     total: Number(payload.total),
-    paymentMethod: 'cod',
+    paymentMethod: payload.payment_method === 'upi' ? 'upi' : 'cod',
     paymentStatus: payload.payment_status ?? 'pending',
     paymentNote: payload.payment_note ?? null,
+    paymentProofUrl: payload.payment_proof_url ?? null,
+    paymentUpiReference: payload.payment_upi_reference ?? null,
     address: {
       name: payload.customer_name,
       phone: payload.customer_phone,
@@ -82,6 +87,7 @@ export async function placeOrderInDb(
   items: CartItem[],
   address: DeliveryAddress,
   profileId?: string,
+  paymentMethod: PaymentMethod = 'cod',
 ): Promise<Order | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
@@ -107,7 +113,7 @@ export async function placeOrderInDb(
     subtotal,
     deliveryFee,
     total,
-    paymentMethod: 'cod',
+    paymentMethod,
     paymentStatus: 'pending',
     address: { ...address, phone: customerPhone },
     status: 'placed',
@@ -138,6 +144,7 @@ export async function placeOrderInDb(
     p_total: total,
     p_items: payloadItems,
     p_initial_message: initialMessage,
+    p_payment_method: paymentMethod,
   });
 
   if (error || !orderId) {

@@ -4,6 +4,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -16,14 +17,16 @@ import {
   CURRENCY,
   DELIVERY_FEE,
   MIN_ORDER_AMOUNT,
+  PAYMENT_METHOD_LABELS,
   SHOP_NAME,
 } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { formatPhoneDisplay } from '@/services/auth';
-import { DeliveryAddress } from '@/types';
+import { DeliveryAddress, PaymentMethod } from '@/types';
 import { cn } from '@/utils/cn';
+import { isShopUpiConfigured } from '@/services/upi';
 
 function fieldBorderClass(hasError: boolean, multiline = false) {
   return cn(
@@ -39,6 +42,7 @@ export default function CheckoutScreen() {
   const { placeOrder } = useOrders();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [showFieldErrors, setShowFieldErrors] = useState(false);
   const [form, setForm] = useState<DeliveryAddress>({
     name: '',
@@ -96,13 +100,17 @@ export default function CheckoutScreen() {
 
     setLoading(true);
     try {
-      const order = await placeOrder(items, {
-        ...form,
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        addressLine: form.addressLine.trim(),
-        landmark: form.landmark?.trim(),
-      });
+      const order = await placeOrder(
+        items,
+        {
+          ...form,
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          addressLine: form.addressLine.trim(),
+          landmark: form.landmark?.trim(),
+        },
+        paymentMethod,
+      );
 
       clearCart();
       router.replace(`/order/${order.id}`);
@@ -181,13 +189,41 @@ export default function CheckoutScreen() {
 
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
           <Text className="mb-4 text-base font-bold text-foreground">Payment</Text>
-          <View className="rounded-xl bg-primary-light p-4">
-            <Text className="mb-1 text-[15px] font-bold text-primary">Cash on Delivery</Text>
-            <Text className="text-sm leading-5 text-muted">
+
+          <Pressable
+            onPress={() => setPaymentMethod('cod')}
+            className={cn(
+              'mb-2 rounded-xl border p-4',
+              paymentMethod === 'cod'
+                ? 'border-primary bg-primary-light'
+                : 'border-border bg-background',
+            )}
+          >
+            <Text className="text-[15px] font-bold text-primary">{PAYMENT_METHOD_LABELS.cod}</Text>
+            <Text className="mt-1 text-sm leading-5 text-muted">
               Pay {CURRENCY}
               {total} when your order arrives.
             </Text>
-          </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => isShopUpiConfigured() && setPaymentMethod('upi')}
+            disabled={!isShopUpiConfigured()}
+            className={cn(
+              'rounded-xl border p-4',
+              paymentMethod === 'upi'
+                ? 'border-primary bg-primary-light'
+                : 'border-border bg-background',
+              !isShopUpiConfigured() && 'opacity-60',
+            )}
+          >
+            <Text className="text-[15px] font-bold text-primary">{PAYMENT_METHOD_LABELS.upi}</Text>
+            <Text className="mt-1 text-sm leading-5 text-muted">
+              {isShopUpiConfigured()
+                ? `Pay ${CURRENCY}${total} via GPay or PhonePe after placing the order, then upload a payment screenshot.`
+                : 'Online UPI payment will be available soon. Use cash on delivery for now.'}
+            </Text>
+          </Pressable>
         </View>
 
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">

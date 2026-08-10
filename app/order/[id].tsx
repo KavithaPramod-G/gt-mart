@@ -4,7 +4,8 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
-import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, SHOP_NAME } from '@/constants/config';
+import { UpiPaymentSection } from '@/components/UpiPaymentSection';
+import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, SHOP_NAME } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { useOrders } from '@/context/OrderContext';
 
@@ -43,6 +44,8 @@ export default function OrderDetailScreen() {
         <OrderStatusTimeline currentStatus={order.status} />
       </View>
 
+      <UpiPaymentSection order={order} />
+
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
         <Text className="mb-2 text-base font-bold text-foreground">Items</Text>
         {order.items.map((item) => (
@@ -57,22 +60,26 @@ export default function OrderDetailScreen() {
           </View>
         ))}
         <View className="mt-1 flex-row justify-between border-t border-border pt-2">
-          <Text className="text-base font-bold text-foreground">Total (COD)</Text>
+          <Text className="text-base font-bold text-foreground">
+            Total ({PAYMENT_METHOD_LABELS[order.paymentMethod]})
+          </Text>
           <Text className="text-lg font-extrabold text-primary">
             {CURRENCY}
             {order.total}
           </Text>
         </View>
-        <View className="mt-3 flex-row items-center justify-between rounded-xl bg-background px-3 py-2">
-          <Text className="text-sm text-muted">Payment status</Text>
-          <Text
-            className={`text-sm font-semibold ${
-              order.paymentStatus === 'verified' ? 'text-primary' : 'text-amber-700'
-            }`}
-          >
-            {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus ?? 'pending']}
-          </Text>
-        </View>
+        {order.paymentMethod === 'cod' ? (
+          <View className="mt-3 flex-row items-center justify-between rounded-xl bg-background px-3 py-2">
+            <Text className="text-sm text-muted">Payment status</Text>
+            <Text
+              className={`text-sm font-semibold ${
+                order.paymentStatus === 'verified' ? 'text-primary' : 'text-amber-700'
+              }`}
+            >
+              {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus ?? 'pending']}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">

@@ -9,7 +9,13 @@
     "scheme": "gtmart",
     "userInterfaceStyle": "light",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow RR Basket to access photos so you can upload UPI payment screenshots."
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,

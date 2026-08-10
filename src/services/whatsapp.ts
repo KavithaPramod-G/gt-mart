@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import { Alert } from 'react-native';
 
-import { CURRENCY, SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
+import { CURRENCY, PAYMENT_METHOD_LABELS, SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
 import { DeliveryAddress, Order, OrderItem, OrderStatus } from '@/types';
 
 function sanitizePhone(phone: string): string {
@@ -42,11 +42,16 @@ function formatAddress(address: DeliveryAddress): string {
 }
 
 export function buildOrderPlacedMessage(order: Order): string {
+  const paymentLabel =
+    order.paymentMethod === 'upi'
+      ? 'UPI (GPay / PhonePe) — screenshot pending verification'
+      : PAYMENT_METHOD_LABELS.cod;
+
   return [
     `🛒 *New Order - ${SHOP_NAME}*`,
     ``,
     `*Order No:* ${order.orderNumber}`,
-    `*Payment:* Cash on Delivery`,
+    `*Payment:* ${paymentLabel}`,
     ``,
     `*Items:*`,
     formatItems(order.items),
@@ -65,7 +70,10 @@ export function buildStatusUpdateMessage(order: Order, status: OrderStatus): str
     placed: `Your order *${order.orderNumber}* has been placed at ${SHOP_NAME}. We will confirm shortly.`,
     confirmed: `Order *${order.orderNumber}* is confirmed! We are getting your items ready.`,
     preparing: `Order *${order.orderNumber}* is being packed at ${SHOP_NAME}.`,
-    out_for_delivery: `Order *${order.orderNumber}* is out for delivery. Please keep cash ready (${CURRENCY}${order.total}).`,
+    out_for_delivery:
+      order.paymentMethod === 'upi'
+        ? `Order *${order.orderNumber}* is out for delivery.`
+        : `Order *${order.orderNumber}* is out for delivery. Please keep cash ready (${CURRENCY}${order.total}).`,
     delivered: `Order *${order.orderNumber}* has been delivered. Thank you for shopping at ${SHOP_NAME}! 🎉`,
   };
 

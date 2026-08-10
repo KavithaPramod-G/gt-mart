@@ -37,7 +37,7 @@ export type OrderStatus =
   | 'out_for_delivery'
   | 'delivered';
 
-export type PaymentMethod = 'cod';
+export type PaymentMethod = 'cod' | 'upi';
 
 export type OrderPaymentStatus = 'pending' | 'verified';
 
@@ -66,6 +66,8 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentStatus: OrderPaymentStatus;
   paymentNote?: string | null;
+  paymentProofUrl?: string | null;
+  paymentUpiReference?: string | null;
   address: DeliveryAddress;
   status: OrderStatus;
   createdAt: string;
