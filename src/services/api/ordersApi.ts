@@ -6,7 +6,6 @@ import {
   CartItem,
   DeliveryAddress,
   Order,
-  OrderItem,
   OrderPaymentStatus,
   OrderStatus,
   PaymentMethod,

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Alert, Image, Pressable, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { ShopUpiDetails } from '@/components/ShopUpiDetails';
 import {
   CURRENCY,
   ORDER_PAYMENT_STATUS_LABELS,
-  SHOP_UPI_ID,
   SHOP_UPI_PAYEE_NAME,
 } from '@/constants/config';
 import { useOrders } from '@/context/OrderContext';
@@ -71,17 +71,7 @@ export function UpiPaymentSection({ order }: UpiPaymentSectionProps) {
         {order.total} using GPay or PhonePe, then upload a screenshot of the successful payment.
       </Text>
 
-      {upiReady ? (
-        <View className="mb-3 rounded-xl bg-background p-3">
-          <Text className="text-xs font-semibold uppercase text-muted">Pay to</Text>
-          <Text className="mt-1 text-base font-bold text-primary">{SHOP_UPI_ID}</Text>
-          <Text className="text-sm text-muted">{SHOP_UPI_PAYEE_NAME}</Text>
-          <Text className="mt-2 text-sm font-semibold text-foreground">
-            Amount: {CURRENCY}
-            {order.total}
-          </Text>
-        </View>
-      ) : (
+      {upiReady ? null : (
         <View className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
           <Text className="text-sm text-amber-900">
             Online UPI ID is not configured in the app yet. Contact the shop for payment details,
@@ -100,6 +90,9 @@ export function UpiPaymentSection({ order }: UpiPaymentSectionProps) {
               void openGPay({ amount: order.total, orderNumber: order.orderNumber })
             }
           />
+          {upiReady ? (
+            <ShopUpiDetails amount={order.total} className="mt-2" />
+          ) : null}
         </View>
         <View className="flex-1">
           <Button

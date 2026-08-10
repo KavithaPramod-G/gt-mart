@@ -3,7 +3,12 @@ import { Text, View } from 'react-native';
 import { ORDER_STATUS_LABELS } from '@/constants/config';
 import { STATUS_FLOW } from '@/context/OrderContext';
 import { OrderStatus, WhatsAppNotification } from '@/types';
-import { buildStatusNoteMap, getCancelReason } from '@/utils/orderStatusNotes';
+import {
+  buildStatusTimeMap,
+  formatOrderHistoryTime,
+  getCancelReason,
+  getSortedStatusUpdates,
+} from '@/utils/orderStatusNotes';
 import { cn } from '@/utils/cn';
 
 interface OrderStatusTimelineProps {
@@ -15,16 +20,24 @@ export function OrderStatusTimeline({
   currentStatus,
   statusUpdates = [],
 }: OrderStatusTimelineProps) {
-  const statusNotes = buildStatusNoteMap(statusUpdates);
+  const statusTimes = buildStatusTimeMap(statusUpdates);
 
   if (currentStatus === 'cancelled') {
     const cancelReason = getCancelReason(statusUpdates);
+    const cancelledUpdate = getSortedStatusUpdates(statusUpdates)
+      .reverse()
+      .find((update) => update.status === 'cancelled');
 
     return (
       <View className="rounded-2xl border border-red-200 bg-red-50 p-4">
         <Text className="text-[15px] font-semibold text-red-700">
           {ORDER_STATUS_LABELS.cancelled}
         </Text>
+        {cancelledUpdate ? (
+          <Text className="mt-1 text-xs text-red-600">
+            {formatOrderHistoryTime(cancelledUpdate.sentAt)}
+          </Text>
+        ) : null}
         <Text className="mt-1 text-sm text-red-600">
           {cancelReason ?? 'This order was cancelled by the shop.'}
         </Text>
@@ -39,7 +52,7 @@ export function OrderStatusTimeline({
       {STATUS_FLOW.map((status, index) => {
         const isComplete = index <= currentIndex;
         const isCurrent = index === currentIndex;
-        const note = statusNotes[status];
+        const reachedAt = statusTimes[status];
 
         return (
           <View key={status} className="min-h-12 flex-row">
@@ -69,8 +82,10 @@ export function OrderStatusTimeline({
               >
                 {ORDER_STATUS_LABELS[status]}
               </Text>
-              {note && isComplete ? (
-                <Text className="mt-1 text-sm leading-5 text-muted">{note}</Text>
+              {isComplete && reachedAt ? (
+                <Text className="mt-0.5 text-xs text-muted">
+                  {formatOrderHistoryTime(reachedAt)}
+                </Text>
               ) : null}
             </View>
           </View>

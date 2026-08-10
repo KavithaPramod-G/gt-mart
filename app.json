@@ -28,7 +28,13 @@
         "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.gtmart.app",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "queries": [
+        { "scheme": "upi" },
+        { "scheme": "tez" },
+        { "scheme": "gpay" },
+        { "scheme": "phonepe" }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

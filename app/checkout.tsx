@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { ShopUpiDetails } from '@/components/ShopUpiDetails';
 import {
   CURRENCY,
   DELIVERY_FEE,
@@ -67,7 +68,6 @@ export default function CheckoutScreen() {
 
   const total = subtotal + DELIVERY_FEE;
   const meetsMinimum = subtotal >= MIN_ORDER_AMOUNT;
-  // Some Motorola / 3-button nav devices report insets.bottom as 0
   const footerBottomPad =
     insets.bottom > 0 ? insets.bottom : Platform.OS === 'android' ? 48 : 16;
   const isValid =
@@ -223,6 +223,9 @@ export default function CheckoutScreen() {
                 ? `Pay ${CURRENCY}${total} via GPay or PhonePe after placing the order, then upload a payment screenshot.`
                 : 'Online UPI payment will be available soon. Use cash on delivery for now.'}
             </Text>
+            {paymentMethod === 'upi' && isShopUpiConfigured() ? (
+              <ShopUpiDetails amount={total} className="mt-3" />
+            ) : null}
           </Pressable>
         </View>
 

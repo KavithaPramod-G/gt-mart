@@ -4,6 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
+import { OrderStatusHistory } from '@/components/OrderStatusHistory';
 import { UpiPaymentSection } from '@/components/UpiPaymentSection';
 import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, SHOP_NAME } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -37,7 +38,7 @@ export default function OrderDetailScreen() {
       </View>
 
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
-        <Text className="mb-2 text-base font-bold text-foreground">Delivery status</Text>
+        <Text className="mb-2 text-base font-bold text-foreground">Current status</Text>
         <Text className="mb-4 text-[15px] font-semibold text-primary">
           {ORDER_STATUS_LABELS[order.status]}
         </Text>
@@ -45,6 +46,14 @@ export default function OrderDetailScreen() {
           currentStatus={order.status}
           statusUpdates={order.whatsappNotifications}
         />
+      </View>
+
+      <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
+        <Text className="mb-3 text-base font-bold text-foreground">Order history</Text>
+        <Text className="mb-4 text-sm leading-5 text-muted">
+          Each step with time. Cancel reason is shown when applicable.
+        </Text>
+        <OrderStatusHistory updates={order.whatsappNotifications} />
       </View>
 
       <UpiPaymentSection order={order} />
@@ -95,30 +104,6 @@ export default function OrderDetailScreen() {
             Near {order.address.landmark}
           </Text>
         ) : null}
-      </View>
-
-      <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
-        <Text className="mb-2 text-base font-bold text-foreground">Order history</Text>
-        {order.whatsappNotifications.map((notification) => (
-          <View
-            key={`${notification.status}-${notification.sentAt}`}
-            className="mb-2 rounded-xl bg-background p-3"
-          >
-            <Text className="mb-1 font-bold text-primary">
-              {ORDER_STATUS_LABELS[notification.status]}
-            </Text>
-            {notification.statusNote ? (
-              <Text className="mb-1 text-sm leading-5 text-foreground">
-                {notification.status === 'cancelled' ? 'Reason: ' : 'Note: '}
-                {notification.statusNote}
-              </Text>
-            ) : null}
-            <Text className="mb-1 text-sm leading-5 text-muted">{notification.message}</Text>
-            <Text className="text-xs text-muted">
-              {new Date(notification.sentAt).toLocaleString()}
-            </Text>
-          </View>
-        ))}
       </View>
 
       <View className="gap-2">

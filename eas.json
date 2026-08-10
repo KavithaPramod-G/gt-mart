@@ -22,8 +22,8 @@
         "EXPO_PUBLIC_OTP_DEV_MODE": "false",
         "EXPO_PUBLIC_PHONE_ONLY_AUTH": "false",
         "EXPO_PUBLIC_PASSWORD_AUTH": "true",
-        "EXPO_PUBLIC_SHOP_UPI_ID": "",
-        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "RR Basket"
+        "EXPO_PUBLIC_SHOP_UPI_ID": "9290860984@idfcfirst",
+        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "Gottipati Ramesh"
       }
     },
     "production": {
@@ -37,8 +37,8 @@
         "EXPO_PUBLIC_OTP_DEV_MODE": "false",
         "EXPO_PUBLIC_PHONE_ONLY_AUTH": "false",
         "EXPO_PUBLIC_PASSWORD_AUTH": "true",
-        "EXPO_PUBLIC_SHOP_UPI_ID": "",
-        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "RR Basket"
+        "EXPO_PUBLIC_SHOP_UPI_ID": "9290860984@idfcfirst",
+        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "Gottipati Ramesh"
       }
     }
   }

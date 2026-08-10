@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
 import { CURRENCY, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants/config';
 import { useOrders } from '@/context/OrderContext';
-import { getCancelReason, getLatestStatusNote } from '@/utils/orderStatusNotes';
+import { getCancelReason, getSortedStatusUpdates } from '@/utils/orderStatusNotes';
 
 export default function OrdersScreen() {
   const { orders } = useOrders();
@@ -24,8 +24,8 @@ export default function OrdersScreen() {
     <ScrollView className="flex-1 bg-background" contentContainerClassName="p-4 pb-8">
       {orders.map((order) => {
         const cancelReason = getCancelReason(order.whatsappNotifications);
-        const latestNote =
-          order.status === 'cancelled' ? cancelReason : getLatestStatusNote(order.whatsappNotifications);
+        const history = getSortedStatusUpdates(order.whatsappNotifications);
+        const lastUpdate = history[history.length - 1];
 
         return (
           <Pressable
@@ -46,14 +46,16 @@ export default function OrdersScreen() {
               {order.items.length} items · {CURRENCY}
               {order.total} · {PAYMENT_METHOD_LABELS[order.paymentMethod]}
             </Text>
-            {latestNote ? (
+            {order.status === 'cancelled' && cancelReason ? (
               <Text className="mb-1 text-sm leading-5 text-foreground" numberOfLines={2}>
-                {order.status === 'cancelled' ? 'Reason: ' : 'Note: '}
-                {latestNote}
+                Reason: {cancelReason}
               </Text>
             ) : null}
             <Text className="mb-4 text-[13px] text-muted">
-              {new Date(order.createdAt).toLocaleString()}
+              Placed {new Date(order.createdAt).toLocaleString()}
+              {lastUpdate
+                ? ` · Last update ${new Date(lastUpdate.sentAt).toLocaleString()}`
+                : ''}
             </Text>
 
             <OrderStatusTimeline
