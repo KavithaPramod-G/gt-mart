@@ -35,7 +35,8 @@ export type OrderStatus =
   | 'confirmed'
   | 'preparing'
   | 'out_for_delivery'
-  | 'delivered';
+  | 'delivered'
+  | 'cancelled';
 
 export type PaymentMethod = 'cod' | 'upi';
 
@@ -79,6 +80,7 @@ export interface WhatsAppNotification {
   status: OrderStatus;
   sentAt: string;
   message: string;
+  statusNote?: string | null;
 }
 
 export interface UserProfile {

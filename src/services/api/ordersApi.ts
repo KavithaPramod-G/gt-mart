@@ -43,6 +43,7 @@ interface DbOrderPayload {
   notifications: Array<{
     status: OrderStatus;
     message: string;
+    status_note?: string | null;
     sent_at: string;
   }>;
 }
@@ -79,6 +80,7 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
       status: n.status,
       sentAt: n.sent_at,
       message: n.message,
+      statusNote: n.status_note ?? null,
     })),
   };
 }

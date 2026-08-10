@@ -75,6 +75,7 @@ export function buildStatusUpdateMessage(order: Order, status: OrderStatus): str
         ? `Order *${order.orderNumber}* is out for delivery.`
         : `Order *${order.orderNumber}* is out for delivery. Please keep cash ready (${CURRENCY}${order.total}).`,
     delivered: `Order *${order.orderNumber}* has been delivered. Thank you for shopping at ${SHOP_NAME}! 🎉`,
+    cancelled: `Order *${order.orderNumber}* was cancelled. Contact ${SHOP_NAME} if you have questions.`,
   };
 
   return statusMessages[status];

@@ -24,6 +24,7 @@ export const ORDER_STATUS_LABELS: Record<
   preparing: 'Preparing',
   out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 export const ORDER_PAYMENT_STATUS_LABELS: Record<

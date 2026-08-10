@@ -41,7 +41,10 @@ export default function OrderDetailScreen() {
         <Text className="mb-4 text-[15px] font-semibold text-primary">
           {ORDER_STATUS_LABELS[order.status]}
         </Text>
-        <OrderStatusTimeline currentStatus={order.status} />
+        <OrderStatusTimeline
+          currentStatus={order.status}
+          statusUpdates={order.whatsappNotifications}
+        />
       </View>
 
       <UpiPaymentSection order={order} />
@@ -95,16 +98,22 @@ export default function OrderDetailScreen() {
       </View>
 
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
-        <Text className="mb-2 text-base font-bold text-foreground">WhatsApp updates</Text>
+        <Text className="mb-2 text-base font-bold text-foreground">Order history</Text>
         {order.whatsappNotifications.map((notification) => (
           <View
             key={`${notification.status}-${notification.sentAt}`}
-            className="mb-2 rounded-xl bg-background p-2"
+            className="mb-2 rounded-xl bg-background p-3"
           >
             <Text className="mb-1 font-bold text-primary">
               {ORDER_STATUS_LABELS[notification.status]}
             </Text>
-            <Text className="mb-1 leading-5 text-foreground">{notification.message}</Text>
+            {notification.statusNote ? (
+              <Text className="mb-1 text-sm leading-5 text-foreground">
+                {notification.status === 'cancelled' ? 'Reason: ' : 'Note: '}
+                {notification.statusNote}
+              </Text>
+            ) : null}
+            <Text className="mb-1 text-sm leading-5 text-muted">{notification.message}</Text>
             <Text className="text-xs text-muted">
               {new Date(notification.sentAt).toLocaleString()}
             </Text>
