@@ -4,7 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
-import { CURRENCY, ORDER_STATUS_LABELS, SHOP_NAME } from '@/constants/config';
+import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, SHOP_NAME } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { useOrders } from '@/context/OrderContext';
 
@@ -61,6 +61,16 @@ export default function OrderDetailScreen() {
           <Text className="text-lg font-extrabold text-primary">
             {CURRENCY}
             {order.total}
+          </Text>
+        </View>
+        <View className="mt-3 flex-row items-center justify-between rounded-xl bg-background px-3 py-2">
+          <Text className="text-sm text-muted">Payment status</Text>
+          <Text
+            className={`text-sm font-semibold ${
+              order.paymentStatus === 'verified' ? 'text-primary' : 'text-amber-700'
+            }`}
+          >
+            {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus ?? 'pending']}
           </Text>
         </View>
       </View>

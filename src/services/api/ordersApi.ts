@@ -7,6 +7,7 @@ import {
   DeliveryAddress,
   Order,
   OrderItem,
+  OrderPaymentStatus,
   OrderStatus,
   WhatsAppNotification,
 } from '@/types';
@@ -23,6 +24,8 @@ interface DbOrderPayload {
   delivery_fee: number;
   total: number;
   payment_method: string;
+  payment_status?: OrderPaymentStatus;
+  payment_note?: string | null;
   status: OrderStatus;
   created_at: string;
   updated_at: string;
@@ -56,6 +59,8 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
     deliveryFee: Number(payload.delivery_fee),
     total: Number(payload.total),
     paymentMethod: 'cod',
+    paymentStatus: payload.payment_status ?? 'pending',
+    paymentNote: payload.payment_note ?? null,
     address: {
       name: payload.customer_name,
       phone: payload.customer_phone,
@@ -103,6 +108,7 @@ export async function placeOrderInDb(
     deliveryFee,
     total,
     paymentMethod: 'cod',
+    paymentStatus: 'pending',
     address: { ...address, phone: customerPhone },
     status: 'placed',
     createdAt: new Date().toISOString(),

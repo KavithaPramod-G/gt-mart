@@ -26,6 +26,14 @@ export const ORDER_STATUS_LABELS: Record<
   delivered: 'Delivered',
 };
 
+export const ORDER_PAYMENT_STATUS_LABELS: Record<
+  import('@/types').OrderPaymentStatus,
+  string
+> = {
+  pending: 'Payment pending',
+  verified: 'Payment received',
+};
+
 /** Local fallback OTP when Supabase is not configured */
 export const DEV_MOCK_OTP = '123456';
 export const MIN_PASSWORD_LENGTH = 6;

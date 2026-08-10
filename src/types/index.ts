@@ -39,6 +39,8 @@ export type OrderStatus =
 
 export type PaymentMethod = 'cod';
 
+export type OrderPaymentStatus = 'pending' | 'verified';
+
 export interface DeliveryAddress {
   name: string;
   phone: string;
@@ -62,6 +64,8 @@ export interface Order {
   deliveryFee: number;
   total: number;
   paymentMethod: PaymentMethod;
+  paymentStatus: OrderPaymentStatus;
+  paymentNote?: string | null;
   address: DeliveryAddress;
   status: OrderStatus;
   createdAt: string;
