@@ -10,6 +10,13 @@ export interface ShopCategory {
   accent: string;
   blurb: string;
   sortOrder: number;
+  parentGroupId?: string | null;
+}
+
+export interface CategoryParentGroup {
+  id: string;
+  label: string;
+  sortOrder: number;
 }
 
 export interface Product {
