@@ -1,6 +1,19 @@
 /** Replace with your shop's WhatsApp number (country code, no + or spaces). Example: 919876543210 */
 export const SHOP_WHATSAPP_NUMBER = '919100912399';
 
+export interface ShopSupportContact {
+  /** Short label, e.g. "Orders", "Store desk". */
+  label: string;
+  /** Phone with country code, no + or spaces. Example: 919100912399 */
+  phone: string;
+}
+
+/** Tap-to-call / WhatsApp contacts shown on the shop home screen. */
+export const SHOP_SUPPORT_CONTACTS: ShopSupportContact[] = [
+  { label: 'Shop orders', phone: SHOP_WHATSAPP_NUMBER },
+  { label: 'Store desk', phone: '919290860984' },
+];
+
 export const APP_NAME = 'RR Basket';
 export const SHOP_NAME = 'RR Basket';
 export const SHOP_LOCATION = 'GT Mart · Kavali';

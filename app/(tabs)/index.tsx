@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryHeroCards } from '@/components/CategoryHeroCards';
 import { SearchInput } from '@/components/SearchInput';
+import { ShopSupportLinks } from '@/components/ShopSupportLinks';
 import { ProductGridList } from '@/components/ProductGridList';
 import { APP_NAME, SHOP_LOCATION, SHOP_TAGLINE } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -27,10 +28,15 @@ export default function ShopScreen() {
         className="bg-primary px-4 pb-4"
         style={{ paddingTop: insets.top + 16 }}
       >
-        <Text className="text-[28px] font-extrabold text-white">{APP_NAME}</Text>
-        <Text className="mb-4 mt-1 text-sm text-primary-light">
-          {SHOP_LOCATION} · {SHOP_TAGLINE}
-        </Text>
+        <View className="mb-4 flex-row items-start justify-between gap-3">
+          <View className="flex-1">
+            <Text className="text-[28px] font-extrabold text-white">{APP_NAME}</Text>
+            <Text className="mt-1 text-sm text-primary-light">
+              {SHOP_LOCATION} · {SHOP_TAGLINE}
+            </Text>
+          </View>
+          <ShopSupportLinks />
+        </View>
         <SearchInput
           placeholder="Search groceries..."
           placeholderTextColor="#5C6B63"

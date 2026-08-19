@@ -27,6 +27,22 @@ export async function openWhatsApp(phone: string, message: string): Promise<bool
   }
 }
 
+export async function openPhoneCall(phone: string): Promise<boolean> {
+  const digits = sanitizePhone(phone);
+  if (!digits) {
+    Alert.alert('Invalid number', 'This support number is not configured correctly.');
+    return false;
+  }
+
+  try {
+    await Linking.openURL(`tel:+${digits}`);
+    return true;
+  } catch {
+    Alert.alert('Call unavailable', 'Could not open the phone dialer on this device.');
+    return false;
+  }
+}
+
 function formatItems(items: OrderItem[]): string {
   return items
     .map(
