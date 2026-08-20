@@ -58,6 +58,7 @@ export default function RootLayout() {
                   name="category/[id]"
                   options={{ title: 'Products' }}
                 />
+                <Stack.Screen name="deals" options={{ title: "Today's deals" }} />
               </Stack>
             </OrderProvider>
           </CartProvider>

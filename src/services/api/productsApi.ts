@@ -95,3 +95,25 @@ export async function fetchProductsPage(
     hasMore: from + products.length < totalCount,
   };
 }
+
+/** In-stock products with MRP above selling price — for home discount sections. */
+export async function fetchDiscountDealProducts(): Promise<Product[] | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('products')
+    .select(PRODUCT_COLUMNS)
+    .eq('in_stock', true)
+    .order('item_name')
+    .limit(500);
+
+  if (error || !data) {
+    console.warn('[productsApi] fetch discount deals failed:', error?.message);
+    return null;
+  }
+
+  return (data as DbProduct[])
+    .map(mapProduct)
+    .filter((product) => product.mrp > product.price);
+}

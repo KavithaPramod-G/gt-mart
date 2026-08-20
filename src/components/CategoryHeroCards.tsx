@@ -2,9 +2,11 @@ import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { CategoryImage } from '@/components/CategoryImage';
+import { DealsHeroCard } from '@/components/DealsHeroCard';
 import { ALL_PRODUCTS_META } from '@/constants/categoryMeta';
 import { groupCategoriesByParent } from '@/constants/categoryGroups';
 import { useCategories } from '@/context/CategoriesContext';
+import { useDiscountDeals } from '@/hooks/useDiscountDeals';
 import { ShopCategory } from '@/types';
 
 const GRID_PADDING = 16;
@@ -161,6 +163,7 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
   const columns = getColumnCount(width);
   const cardWidth = getCardWidth(width, columns);
   const { categories, parentGroups, isLoading, getCategoryLabel, getCategoryUi } = useCategories();
+  const { maxDiscountPercent } = useDiscountDeals();
 
   const handlePress = (category: string | 'all') => {
     if (onCategoryPress) {
@@ -201,6 +204,8 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
           <Text className="text-lg text-primary">→</Text>
         </View>
       </Pressable>
+
+      <DealsHeroCard maxDiscountPercent={maxDiscountPercent} />
 
       {groupedCategories.map(({ group, categories: groupCategories }) => (
         <CategoryGroupSection
