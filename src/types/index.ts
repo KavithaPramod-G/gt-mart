@@ -29,6 +29,8 @@ export interface Product {
   category: ProductCategory;
   emoji: string;
   imageUrl?: string | null;
+  /** Ordered gallery for swipe; falls back to imageUrl when empty. */
+  imageUrls?: string[];
   inStock: boolean;
 }
 
