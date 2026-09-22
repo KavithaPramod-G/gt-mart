@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "RR Basket",
+    "name": "RROne",
     "slug": "gt-mart",
     "owner": "gtmart-kvl",
     "version": "1.0.0",
@@ -13,7 +13,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow RR Basket to access photos so you can upload UPI payment screenshots."
+          "photosPermission": "Allow RROne to access photos so you can upload UPI payment screenshots."
         }
       ]
     ],
@@ -26,7 +26,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E8F5EE",
+        "backgroundColor": "#04442C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png"
       },

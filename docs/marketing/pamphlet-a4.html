@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RROne — Pamphlet</title>
+    <style>
+      @page { size: A4; margin: 0; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #1a1f1c; background: #e8ece9; }
+      .page {
+        width: 210mm; height: 297mm; margin: 0 auto 12mm; background: #fff;
+        overflow: hidden; position: relative; page-break-after: always;
+      }
+      .front { background: linear-gradient(165deg, #145c3a 0%, #1b7a4e 42%, #e8f5ee 42%, #fff 100%); }
+      .front-header { padding: 14mm 14mm 8mm; color: #fff; display: flex; align-items: center; gap: 5mm; }
+      .front-header img { width: 22mm; height: 22mm; border-radius: 5mm; border: 2px solid rgba(255,255,255,.85); background: #fff; }
+      .brand-title { font-size: 13mm; font-weight: 800; line-height: 1; }
+      .brand-sub { margin-top: 2mm; font-size: 4.5mm; }
+      .hero { padding: 4mm 14mm 8mm; }
+      .hero h1 { font-size: 9mm; line-height: 1.25; color: #0f3d27; max-width: 120mm; }
+      .hero p { margin-top: 4mm; font-size: 5mm; color: #3d4f47; }
+      .hero-telugu { margin-top: 2mm; font-size: 5.5mm; color: #1b7a4e; font-weight: 700; }
+      .features { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; padding: 0 14mm 8mm; }
+      .feature { background: #f7fbf8; border: 1px solid #d7e8de; border-radius: 4mm; padding: 4mm; }
+      .feature strong { display: block; font-size: 4.6mm; color: #145c3a; margin-bottom: 1.5mm; }
+      .feature span { font-size: 3.8mm; color: #5c6b63; line-height: 1.35; }
+      .cta-panel {
+        margin: 0 14mm; background: #fff; border: 2px solid #1b7a4e; border-radius: 5mm;
+        padding: 6mm; display: grid; grid-template-columns: 34mm 1fr; gap: 6mm; align-items: center;
+      }
+      .qr-wrap { text-align: center; }
+      .qr-wrap img { width: 34mm; height: 34mm; border-radius: 3mm; border: 1px solid #e2e8e5; }
+      .qr-wrap p { margin-top: 2mm; font-size: 3.2mm; color: #5c6b63; font-weight: 600; }
+      .cta-text h2 { font-size: 6.5mm; color: #1b7a4e; margin-bottom: 2mm; }
+      .cta-text p { font-size: 4mm; color: #3d4f47; line-height: 1.45; }
+      .badge-row { display: flex; flex-wrap: wrap; gap: 2.5mm; margin-top: 4mm; }
+      .badge { background: #e8f5ee; color: #145c3a; font-size: 3.4mm; font-weight: 700; padding: 1.8mm 3mm; border-radius: 999px; }
+      .front-footer {
+        position: absolute; bottom: 0; left: 0; right: 0; background: #145c3a; color: #fff;
+        padding: 4mm 14mm; display: flex; justify-content: space-between; font-size: 4mm;
+      }
+      .back { padding: 14mm; }
+      .back h2 { font-size: 8mm; color: #1b7a4e; margin-bottom: 5mm; }
+      .steps { display: grid; gap: 4mm; margin-bottom: 8mm; }
+      .step { display: grid; grid-template-columns: 10mm 1fr; gap: 4mm; }
+      .step-num {
+        width: 10mm; height: 10mm; border-radius: 50%; background: #1b7a4e; color: #fff;
+        font-weight: 800; font-size: 4.5mm; display: flex; align-items: center; justify-content: center;
+      }
+      .step h3 { font-size: 4.8mm; margin-bottom: 1mm; }
+      .step p { font-size: 4mm; color: #5c6b63; line-height: 1.4; }
+      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-bottom: 8mm; }
+      .info-card { background: #f7fbf8; border-left: 4px solid #1b7a4e; padding: 4mm; }
+      .info-card strong { display: block; font-size: 4.2mm; color: #145c3a; margin-bottom: 1mm; }
+      .info-card span { font-size: 4mm; color: #3d4f47; }
+      .banner-strip { background: linear-gradient(90deg, #1b7a4e, #2ea86a); color: #fff; border-radius: 4mm; padding: 5mm 6mm; text-align: center; }
+      .banner-strip h3 { font-size: 6mm; margin-bottom: 2mm; }
+      .banner-strip p { font-size: 4.2mm; }
+      @media print { body { background: #fff; } .page { margin: 0; box-shadow: none; } }
+    </style>
+  </head>
+  <body>
+    <section class="page front">
+      <div class="front-header">
+        <img src="../../assets/icon.png" alt="RROne" />
+        <div>
+          <div class="brand-title" id="appName">RROne</div>
+          <div class="brand-sub"><span id="shopName">GT Mart</span> · <span id="location">Kavali</span></div>
+        </div>
+      </div>
+      <div class="hero">
+        <h1>Shop everything from your phone</h1>
+        <p id="tagline">Fresh groceries, delivered locally</p>
+        <p class="hero-telugu" id="taglineTelugu">తాజా కిరాణా — మీ దగ్గరే</p>
+      </div>
+      <div class="features">
+        <div class="feature"><strong>Easy ordering</strong><span>Browse categories, search products, add to cart.</span></div>
+        <div class="feature"><strong>Flexible payment</strong><span>Cash on delivery or GPay / PhonePe online.</span></div>
+        <div class="feature"><strong>Track orders</strong><span>See order status and updates in the app.</span></div>
+        <div class="feature"><strong>Local delivery</strong><span>Trusted store — GT Mart, Kavali.</span></div>
+      </div>
+      <div class="cta-panel">
+        <div class="qr-wrap"><img id="qrCode" alt="Scan to download" /><p>SCAN TO DOWNLOAD</p></div>
+        <div class="cta-text">
+          <h2>Download RROne free</h2>
+          <p>Scan with your phone camera and install from Google Play.</p>
+          <div class="badge-row">
+            <span class="badge">Android</span>
+            <span class="badge">Free app</span>
+            <span class="badge" id="minOrderBadge">Min order ₹500</span>
+          </div>
+        </div>
+      </div>
+      <div class="front-footer">
+        <span>WhatsApp: <strong id="whatsappDisplay">+91 91009 12399</strong></span>
+        <span>GT Mart · Kavali</span>
+      </div>
+    </section>
+    <section class="page back">
+      <h2>How to order in 4 simple steps</h2>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div><h3>Download RROne</h3><p>Scan the QR code and install from Google Play.</p></div></div>
+        <div class="step"><div class="step-num">2</div><div><h3>Choose products</h3><p>Browse departments or search. Add items to cart.</p></div></div>
+        <div class="step"><div class="step-num">3</div><div><h3>Place order</h3><p>Enter address. Pay COD or online via UPI.</p></div></div>
+        <div class="step"><div class="step-num">4</div><div><h3>Track delivery</h3><p>Follow order status in the Orders tab.</p></div></div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><strong>Minimum order</strong><span id="minOrderText">₹500</span></div>
+        <div class="info-card"><strong>Shop WhatsApp</strong><span id="whatsappText">+91 91009 12399</span></div>
+        <div class="info-card"><strong>Store</strong><span>GT Mart, Kavali</span></div>
+        <div class="info-card"><strong>Need help?</strong><span>Message us on WhatsApp.</span></div>
+      </div>
+      <div class="banner-strip">
+        <h3>RROne — GT Mart Kavali</h3>
+        <p>Your neighbourhood marketplace. Groceries, home, fashion and more — delivered locally.</p>
+      </div>
+    </section>
+    <script type="module">
+      import { MARKETING } from './config.js';
+      const qr = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data=${encodeURIComponent(MARKETING.appDownloadUrl)}`;
+      appName.textContent = MARKETING.appName;
+      shopName.textContent = MARKETING.shopName;
+      location.textContent = MARKETING.location;
+      tagline.textContent = MARKETING.tagline;
+      taglineTelugu.textContent = MARKETING.taglineTelugu;
+      minOrderBadge.textContent = `Min order ${MARKETING.minOrder}`;
+      minOrderText.textContent = MARKETING.minOrder;
+      whatsappDisplay.textContent = MARKETING.whatsappDisplay;
+      whatsappText.textContent = MARKETING.whatsappDisplay;
+      qrCode.src = qr;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RROne — Shop Banner</title>
+    <style>
+      @page { size: 420mm 297mm; margin: 0; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #ddd; }
+      .banner {
+        width: 420mm; height: 297mm; margin: 0 auto;
+        background: linear-gradient(120deg, #0f3d27 0%, #1b7a4e 35%, #fff 35%);
+        display: grid; grid-template-columns: 1.1fr 0.9fr; position: relative; overflow: hidden;
+      }
+      .left { color: #fff; padding: 18mm 20mm; display: flex; flex-direction: column; justify-content: center; }
+      .logo-row { display: flex; align-items: center; gap: 6mm; margin-bottom: 10mm; }
+      .logo-row img { width: 28mm; height: 28mm; border-radius: 6mm; border: 2px solid rgba(255,255,255,.85); }
+      .logo-row h1 { font-size: 18mm; line-height: 1; }
+      .logo-row p { font-size: 5mm; }
+      .headline { font-size: 14mm; line-height: 1.15; font-weight: 800; max-width: 180mm; margin-bottom: 6mm; }
+      .sub { font-size: 6mm; line-height: 1.4; max-width: 170mm; opacity: .95; }
+      .points { margin-top: 10mm; display: grid; gap: 3mm; }
+      .points li { list-style: none; font-size: 5.2mm; padding-left: 8mm; position: relative; }
+      .points li::before { content: '✓'; position: absolute; left: 0; font-weight: 800; }
+      .right { display: flex; align-items: center; justify-content: center; padding: 16mm; }
+      .qr-card {
+        background: #fff; border: 3px solid #1b7a4e; border-radius: 8mm; padding: 10mm;
+        text-align: center; width: 100%; max-width: 130mm;
+      }
+      .qr-card img.qr { width: 72mm; height: 72mm; border-radius: 4mm; border: 1px solid #e2e8e5; }
+      .qr-card h2 { margin-top: 6mm; font-size: 9mm; color: #1b7a4e; }
+      .qr-card p { margin-top: 3mm; font-size: 5mm; color: #5c6b63; line-height: 1.4; }
+      .qr-card .shop { margin-top: 6mm; font-size: 5.5mm; font-weight: 700; color: #145c3a; }
+      .footer-bar {
+        position: absolute; bottom: 0; left: 0; right: 0; background: #145c3a; color: #fff;
+        text-align: center; padding: 4mm; font-size: 5mm; font-weight: 600;
+      }
+      @media print { body { background: #fff; } }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <div class="left">
+        <div class="logo-row">
+          <img src="../../assets/icon.png" alt="RROne" />
+          <div><h1 id="appName">RROne</h1><p><span id="shopName">GT Mart</span> · <span id="location">Kavali</span></p></div>
+        </div>
+        <div class="headline">Scan &amp; shop everything from your phone</div>
+        <p class="sub" id="tagline">Fresh groceries, delivered locally.</p>
+        <ul class="points">
+          <li>Browse groceries, fashion, home &amp; more</li>
+          <li>Cash on delivery or GPay / PhonePe</li>
+          <li>Track your order in the app</li>
+          <li id="minOrderLine">Minimum order ₹500</li>
+        </ul>
+      </div>
+      <div class="right">
+        <div class="qr-card">
+          <img class="qr" id="qrCode" alt="Download RROne" />
+          <h2>Scan to download</h2>
+          <p>Open camera → scan QR → Install from Google Play</p>
+          <p class="shop">WhatsApp: <span id="whatsappDisplay">+91 91009 12399</span></p>
+        </div>
+      </div>
+      <div class="footer-bar">RROne · GT Mart Kavali · Shop everything. Delivered locally.</div>
+    </div>
+    <script type="module">
+      import { MARKETING } from './config.js';
+      appName.textContent = MARKETING.appName;
+      shopName.textContent = MARKETING.shopName;
+      location.textContent = MARKETING.location;
+      tagline.textContent = `${MARKETING.tagline} — download our free Android app.`;
+      minOrderLine.textContent = `Minimum order ${MARKETING.minOrder}`;
+      whatsappDisplay.textContent = MARKETING.whatsappDisplay;
+      qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=8&data=${encodeURIComponent(MARKETING.appDownloadUrl)}`;
+    </script>
+  </body>
+</html>

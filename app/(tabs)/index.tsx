@@ -38,7 +38,7 @@ export default function ShopScreen() {
           <ShopSupportLinks />
         </View>
         <SearchInput
-          placeholder="Search groceries..."
+          placeholder="Search products..."
           placeholderTextColor="#5C6B63"
           value={searchQuery}
           onChangeText={setSearchQuery}

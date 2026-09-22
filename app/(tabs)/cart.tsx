@@ -17,7 +17,7 @@ export default function CartScreen() {
       <EmptyState
         emoji="🛒"
         title="Your cart is empty"
-        description={`Browse ${APP_NAME} and add fresh groceries to get started.`}
+        description={`Browse ${APP_NAME} and add items to get started.`}
       />
     );
   }

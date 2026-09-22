@@ -14,10 +14,10 @@ export const SHOP_SUPPORT_CONTACTS: ShopSupportContact[] = [
   { label: 'Store desk', phone: '919290860984' },
 ];
 
-export const APP_NAME = 'RR Basket';
-export const SHOP_NAME = 'RR Basket';
+export const APP_NAME = 'RROne';
+export const SHOP_NAME = 'RROne';
 export const SHOP_LOCATION = 'GT Mart · Kavali';
-export const SHOP_TAGLINE = 'Fresh groceries, delivered locally';
+export const SHOP_TAGLINE = 'Shop everything. Delivered locally';
 export const DELIVERY_FEE = 0;
 export const MIN_ORDER_AMOUNT = 500;
 export const CURRENCY = '₹';
