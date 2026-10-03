@@ -91,7 +91,6 @@ export async function fetchProductsPage(
     let query = supabase
       .from('products')
       .select(columns, { count: 'exact' })
-      .eq('in_stock', true)
       .order('item_name');
 
     if (params.categoryId) {

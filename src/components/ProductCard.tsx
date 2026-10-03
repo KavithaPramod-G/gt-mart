@@ -18,11 +18,13 @@ function CartControl({
   onAdd,
   onDecrease,
   onIncrease,
+  canIncrease = true,
 }: {
   quantity: number;
   onAdd: () => void;
   onDecrease: () => void;
   onIncrease: () => void;
+  canIncrease?: boolean;
 }) {
   if (quantity === 0) {
     return (
@@ -42,8 +44,12 @@ function CartControl({
         <Text className="text-lg font-bold text-primary">−</Text>
       </Pressable>
       <Text className="min-w-5 text-center text-sm font-bold text-foreground">{quantity}</Text>
-      <Pressable onPress={onIncrease} className="h-9 w-9 items-center justify-center">
-        <Text className="text-lg font-bold text-primary">+</Text>
+      <Pressable
+        onPress={onIncrease}
+        disabled={!canIncrease}
+        className="h-9 w-9 items-center justify-center"
+      >
+        <Text className={`text-lg font-bold ${canIncrease ? 'text-primary' : 'text-muted'}`}>+</Text>
       </Pressable>
     </View>
   );
@@ -61,15 +67,22 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
 
   return (
     <Pressable onPress={onPress} className="mb-4 active:opacity-95">
-      <View className="relative mb-2 w-full">
+      <View className="relative mb-2 w-full" style={product.inStock ? undefined : { opacity: 0.55 }}>
         <ProductImage product={product} size="card" />
         <View className="absolute bottom-2 right-2" pointerEvents="box-none">
-          <CartControl
-            quantity={quantity}
-            onAdd={() => addItem(product)}
-            onDecrease={() => updateQuantity(product.id, quantity - 1)}
-            onIncrease={() => updateQuantity(product.id, quantity + 1)}
-          />
+          {product.inStock || quantity > 0 ? (
+            <CartControl
+              quantity={quantity}
+              canIncrease={product.inStock}
+              onAdd={() => addItem(product)}
+              onDecrease={() => updateQuantity(product.id, quantity - 1)}
+              onIncrease={() => updateQuantity(product.id, quantity + 1)}
+            />
+          ) : (
+            <View className="rounded-md bg-white px-2 py-1">
+              <Text className="text-[11px] font-bold text-error">Out of stock</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -82,7 +95,11 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
           {product.name}
         </Text>
 
-        {discount > 0 ? (
+        {!product.inStock ? (
+          <Text className="mt-1 text-[12px] font-bold text-error">Out of stock</Text>
+        ) : null}
+
+        {product.inStock && discount > 0 ? (
           <Text className="mt-1 text-[12px] font-bold text-primary">{discount}% OFF</Text>
         ) : null}
 

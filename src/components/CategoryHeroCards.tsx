@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'r
 import { CategoryImage } from '@/components/CategoryImage';
 import { DealsHeroCard } from '@/components/DealsHeroCard';
 import { FestivalCombosSection } from '@/components/FestivalCombosSection';
-import { ALL_PRODUCTS_META } from '@/constants/categoryMeta';
+import { ALL_PRODUCTS_META, categoryShowsFullPhoto } from '@/constants/categoryMeta';
 import { groupCategoriesByParent } from '@/constants/categoryGroups';
 import { useCategories } from '@/context/CategoriesContext';
 import { useDiscountDeals } from '@/hooks/useDiscountDeals';
@@ -74,7 +74,11 @@ function CategoryTile({
           className="mb-2 overflow-hidden rounded-xl bg-white/80"
           style={{ borderWidth: 1, borderColor: `${meta.accent}33` }}
         >
-          <CategoryImage category={meta} size={featured ? 'hero' : 'md'} frameWidth={innerWidth} />
+          <CategoryImage
+            category={meta}
+            size={featured || categoryShowsFullPhoto(category.id) ? 'hero' : 'md'}
+            frameWidth={innerWidth}
+          />
         </View>
       ) : (
         <Text className="mb-1" style={{ fontSize: emojiSize, lineHeight: emojiSize * 1.05 }}>

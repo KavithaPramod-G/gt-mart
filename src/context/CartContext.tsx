@@ -75,6 +75,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, combos, isLoaded]);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
+    if (!product.inStock) return;
     setItems((current) => {
       const existing = current.find((item) => item.product.id === product.id);
       if (existing) {

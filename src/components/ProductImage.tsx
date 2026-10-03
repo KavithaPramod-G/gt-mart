@@ -11,10 +11,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { categoryShowsFullPhoto } from '@/constants/categoryMeta';
 import { Product } from '@/types';
 
 interface ProductImageProps {
-  product: Pick<Product, 'emoji' | 'imageUrl' | 'imageUrls' | 'name'>;
+  product: Pick<Product, 'emoji' | 'imageUrl' | 'imageUrls' | 'name' | 'category'>;
   size?: 'sm' | 'md' | 'card';
 }
 
@@ -48,6 +49,7 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
 
   const primaryUri = urls[0] ?? null;
   const showPhoto = Boolean(primaryUri) && !loadFailed;
+  const resizeMode = categoryShowsFullPhoto(product.category) ? 'contain' : 'cover';
 
   useEffect(() => {
     setLoadFailed(false);
@@ -91,7 +93,7 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
                     source={{ uri: item }}
                     accessibilityLabel={product.name}
                     style={{ width: pageWidth, height: pageWidth }}
-                    resizeMode="cover"
+                    resizeMode={resizeMode}
                     onError={() => {
                       if (item === primaryUri) setLoadFailed(true);
                     }}
@@ -112,7 +114,7 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
               source={{ uri: primaryUri! }}
               accessibilityLabel={product.name}
               style={styles.cardImage}
-              resizeMode="cover"
+              resizeMode={resizeMode}
               onError={() => setLoadFailed(true)}
             />
           )
@@ -140,7 +142,7 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
           source={{ uri: primaryUri! }}
           accessibilityLabel={product.name}
           style={{ width: dimension, height: dimension }}
-          resizeMode="cover"
+          resizeMode={resizeMode}
           onError={() => setLoadFailed(true)}
         />
       </View>

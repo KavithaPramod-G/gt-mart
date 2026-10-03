@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Image, ImageStyle, LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
+import { categoryShowsFullPhoto } from '@/constants/categoryMeta';
 import { ShopCategory } from '@/types';
 
-type CategoryImageSource = Pick<ShopCategory, 'emoji' | 'imageUrl' | 'label'>;
+type CategoryImageSource = Pick<ShopCategory, 'emoji' | 'imageUrl' | 'label'> & {
+  id?: string;
+};
 
 interface CategoryImageProps {
   category: CategoryImageSource;
@@ -103,7 +106,7 @@ export function CategoryImage({ category, size = 'md', frameWidth }: CategoryIma
           source={{ uri: uri! }}
           accessibilityLabel={category.label}
           style={imageStyle}
-          resizeMode="cover"
+          resizeMode={categoryShowsFullPhoto(category.id) ? 'contain' : 'cover'}
           onError={() => setLoadFailed(true)}
         />
       </View>

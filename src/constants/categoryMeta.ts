@@ -1,3 +1,10 @@
+/** Portrait clothing photos should show the whole upload, not a cropped square. */
+export const FULL_PHOTO_CATEGORY_IDS = new Set(['cloths-ladies']);
+
+export function categoryShowsFullPhoto(categoryId: string | null | undefined): boolean {
+  return Boolean(categoryId && FULL_PHOTO_CATEGORY_IDS.has(categoryId));
+}
+
 /** Static UI for the "All products" listing — not stored in categories table. */
 export const ALL_PRODUCTS_META = {
   emoji: '🛒',
