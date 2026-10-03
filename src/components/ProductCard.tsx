@@ -1,9 +1,11 @@
+import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { ProductImage } from '@/components/ProductImage';
 import { ProductPrice } from '@/components/ProductPrice';
 import { CURRENCY } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
+import { useCombos } from '@/context/CombosContext';
 import { Product } from '@/types';
 
 interface ProductCardProps {
@@ -49,7 +51,9 @@ function CartControl({
 
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const { addItem, updateQuantity, getQuantity } = useCart();
+  const { findCombosForProduct } = useCombos();
   const quantity = getQuantity(product.id);
+  const relatedCombo = findCombosForProduct(product)[0];
   const discount =
     product.mrp > product.price
       ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
@@ -92,6 +96,20 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         <Text className="mt-0.5 text-[11px] text-muted">
           {CURRENCY}{product.price} / {product.unit}
         </Text>
+
+        {relatedCombo ? (
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: '/combo/[id]', params: { id: relatedCombo.id } })
+            }
+            className="mt-2 rounded-lg border border-dashed border-primary bg-primary-light px-2 py-1.5"
+          >
+            <Text className="text-[11px] font-semibold text-primary">Also in a combo</Text>
+            <Text className="text-[11px] text-muted" numberOfLines={2}>
+              {relatedCombo.title}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </Pressable>
   );

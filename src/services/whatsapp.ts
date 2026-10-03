@@ -47,7 +47,9 @@ function formatItems(items: OrderItem[]): string {
   return items
     .map(
       (item) =>
-        `• ${item.name} x${item.quantity} (${item.unit}) - ${CURRENCY}${item.price * item.quantity}`,
+        `• ${item.name} x${item.quantity} (${item.unit}) - ${CURRENCY}${item.price * item.quantity}${
+          item.details ? `\n  ${item.details}` : ''
+        }`,
     )
     .join('\n');
 }

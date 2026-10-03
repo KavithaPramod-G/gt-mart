@@ -4,6 +4,7 @@ import { normalizePhone } from '@/services/auth';
 import { buildStatusUpdateMessage } from '@/services/whatsapp';
 import {
   CartItem,
+  ComboCartLine,
   DeliveryAddress,
   Order,
   OrderPaymentStatus,
@@ -38,6 +39,7 @@ interface DbOrderPayload {
     price: number;
     quantity: number;
     unit: string;
+    details?: string | null;
   }>;
   notifications: Array<{
     status: OrderStatus;
@@ -57,6 +59,7 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
       price: Number(item.price),
       quantity: item.quantity,
       unit: item.unit,
+      details: item.details ?? null,
     })),
     subtotal: Number(payload.subtotal),
     deliveryFee: Number(payload.delivery_fee),
@@ -86,6 +89,7 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
 
 export async function placeOrderInDb(
   items: CartItem[],
+  combos: ComboCartLine[],
   address: DeliveryAddress,
   profileId?: string,
   paymentMethod: PaymentMethod = 'cod',
@@ -93,10 +97,9 @@ export async function placeOrderInDb(
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const subtotal = items.reduce(
-    (total, item) => total + item.product.price * item.quantity,
-    0,
-  );
+  const subtotal =
+    items.reduce((total, item) => total + item.product.price * item.quantity, 0) +
+    combos.reduce((total, line) => total + line.comboPrice * line.quantity, 0);
   const deliveryFee = DELIVERY_FEE;
   const total = subtotal + deliveryFee;
   const customerPhone = normalizePhone(address.phone);
@@ -104,13 +107,23 @@ export async function placeOrderInDb(
   const placeholderOrder: Order = {
     id: 'pending',
     orderNumber: 'pending',
-    items: items.map((item) => ({
-      productId: item.product.id,
-      name: item.product.name,
-      price: item.product.price,
-      quantity: item.quantity,
-      unit: item.product.unit,
-    })),
+    items: [
+      ...combos.map((line) => ({
+        productId: line.comboId,
+        name: line.title,
+        price: line.comboPrice,
+        quantity: line.quantity,
+        unit: 'pack',
+        details: line.includedSummary,
+      })),
+      ...items.map((item) => ({
+        productId: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        unit: item.product.unit,
+      })),
+    ],
     subtotal,
     deliveryFee,
     total,
@@ -125,14 +138,20 @@ export async function placeOrderInDb(
 
   const initialMessage = buildStatusUpdateMessage(placeholderOrder, 'placed');
 
-  const payloadItems = items.map((item) => ({
-    product_id: /^[0-9a-f-]{36}$/i.test(item.product.id) ? item.product.id : null,
-    product_legacy_id: /^[0-9a-f-]{36}$/i.test(item.product.id) ? null : item.product.id,
-    name: item.product.name,
-    price: item.product.price,
-    quantity: item.quantity,
-    unit: item.product.unit,
-  }));
+  const payloadItems = [
+    ...combos.map((line) => ({
+      combo_id: line.comboId,
+      quantity: line.quantity,
+    })),
+    ...items.map((item) => ({
+      product_id: /^[0-9a-f-]{36}$/i.test(item.product.id) ? item.product.id : null,
+      product_legacy_id: /^[0-9a-f-]{36}$/i.test(item.product.id) ? null : item.product.id,
+      name: item.product.name,
+      price: item.product.price,
+      quantity: item.quantity,
+      unit: item.product.unit,
+    })),
+  ];
 
   const { data: orderId, error } = await supabase.rpc('place_order', {
     p_profile_id: profileId ?? null,

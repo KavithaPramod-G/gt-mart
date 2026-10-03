@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import { CombosProvider } from '@/context/CombosContext';
 import { OrderProvider } from '@/context/OrderContext';
 import { CategoriesProvider } from '@/context/CategoriesContext';
 
@@ -17,6 +18,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
     <GestureHandlerRootView className="flex-1">
       <CategoriesProvider>
+        <CombosProvider>
         <AuthProvider>
           <CartProvider>
             <OrderProvider>
@@ -59,10 +61,13 @@ export default function RootLayout() {
                   options={{ title: 'Products' }}
                 />
                 <Stack.Screen name="deals" options={{ title: "Today's deals" }} />
+                <Stack.Screen name="combos" options={{ title: 'Festival combos' }} />
+                <Stack.Screen name="combo/[id]" options={{ title: 'Combo' }} />
               </Stack>
             </OrderProvider>
           </CartProvider>
         </AuthProvider>
+        </CombosProvider>
       </CategoriesProvider>
     </GestureHandlerRootView>
     </SafeAreaProvider>

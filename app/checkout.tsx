@@ -39,7 +39,7 @@ function fieldBorderClass(hasError: boolean, multiline = false) {
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, combos, subtotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -102,6 +102,7 @@ export default function CheckoutScreen() {
     try {
       const order = await placeOrder(
         items,
+        combos,
         {
           ...form,
           name: form.name.trim(),

@@ -39,6 +39,45 @@ export interface CartItem {
   quantity: number;
 }
 
+/** One festival pack in the cart. Price is the combo price, not the sum of catalog prices. */
+export interface ComboCartLine {
+  comboId: string;
+  title: string;
+  eventTag: string | null;
+  emoji: string;
+  comboPrice: number;
+  regularTotal: number;
+  quantity: number;
+  includedSummary: string;
+}
+
+export interface ComboOfferItem {
+  productId: string;
+  itemId: string | null;
+  name: string;
+  unit: string;
+  salePrice: number;
+  quantity: number;
+  inStock: boolean;
+  emoji: string;
+  imageUrl: string | null;
+}
+
+export interface ComboOffer {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  eventTag: string | null;
+  emoji: string;
+  comboPrice: number;
+  regularTotal: number;
+  saveAmount: number;
+  savePercent: number;
+  items: ComboOfferItem[];
+  /** False when an included product is missing or out of stock. */
+  available: boolean;
+}
+
 export type OrderStatus =
   | 'placed'
   | 'confirmed'
@@ -64,6 +103,8 @@ export interface OrderItem {
   price: number;
   quantity: number;
   unit: string;
+  /** Included products when this line is a combo pack. */
+  details?: string | null;
 }
 
 export interface Order {

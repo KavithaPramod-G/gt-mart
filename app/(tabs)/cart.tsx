@@ -2,17 +2,18 @@ import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { CartComboRow } from '@/components/CartComboRow';
 import { CartItemRow } from '@/components/CartItemRow';
 import { EmptyState } from '@/components/EmptyState';
 import { APP_NAME, CURRENCY, DELIVERY_FEE, MIN_ORDER_AMOUNT } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
 
 export default function CartScreen() {
-  const { items, subtotal, itemCount } = useCart();
+  const { items, combos, subtotal, itemCount } = useCart();
   const total = subtotal + (itemCount > 0 ? DELIVERY_FEE : 0);
   const meetsMinimum = subtotal >= MIN_ORDER_AMOUNT;
 
-  if (items.length === 0) {
+  if (items.length === 0 && combos.length === 0) {
     return (
       <EmptyState
         emoji="🛒"
@@ -25,6 +26,9 @@ export default function CartScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScrollView contentContainerClassName="p-4 pb-8">
+        {combos.map((line) => (
+          <CartComboRow key={line.comboId} line={line} />
+        ))}
         {items.map((item) => (
           <CartItemRow key={item.product.id} item={item} />
         ))}

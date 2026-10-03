@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { CartComboRow } from '@/components/CartComboRow';
 import { CartItemRow } from '@/components/CartItemRow';
 import { CURRENCY, DELIVERY_FEE, MIN_ORDER_AMOUNT } from '@/constants/config';
 import { useCart } from '@/context/CartContext';
@@ -14,9 +15,9 @@ const COLLAPSED_DOCK_HEIGHT = 88;
 /** Bottom inset so lists don't sit under the collapsed cart dock. */
 export function useCartDockInset(): number {
   const insets = useSafeAreaInsets();
-  const { items } = useCart();
+  const { items, combos } = useCart();
 
-  if (items.length === 0) {
+  if (items.length === 0 && combos.length === 0) {
     return 0;
   }
 
@@ -25,10 +26,10 @@ export function useCartDockInset(): number {
 
 export function CartDock() {
   const insets = useSafeAreaInsets();
-  const { items, itemCount, subtotal } = useCart();
+  const { items, combos, itemCount, subtotal } = useCart();
   const [expanded, setExpanded] = useState(false);
 
-  if (items.length === 0) {
+  if (items.length === 0 && combos.length === 0) {
     return null;
   }
 
@@ -47,6 +48,9 @@ export function CartDock() {
           nestedScrollEnabled
           keyboardShouldPersistTaps="handled"
         >
+          {combos.map((line) => (
+            <CartComboRow key={line.comboId} line={line} />
+          ))}
           {items.map((item) => (
             <CartItemRow key={item.product.id} item={item} />
           ))}

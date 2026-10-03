@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'r
 
 import { CategoryImage } from '@/components/CategoryImage';
 import { DealsHeroCard } from '@/components/DealsHeroCard';
+import { FestivalCombosSection } from '@/components/FestivalCombosSection';
 import { ALL_PRODUCTS_META } from '@/constants/categoryMeta';
 import { groupCategoriesByParent } from '@/constants/categoryGroups';
 import { useCategories } from '@/context/CategoriesContext';
@@ -206,6 +207,8 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
       </Pressable>
 
       <DealsHeroCard maxDiscountPercent={maxDiscountPercent} />
+
+      <FestivalCombosSection />
 
       {groupedCategories.map(({ group, categories: groupCategories }) => (
         <CategoryGroupSection

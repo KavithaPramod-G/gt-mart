@@ -63,9 +63,14 @@ export default function OrderDetailScreen() {
         <Text className="mb-2 text-base font-bold text-foreground">Items</Text>
         {order.items.map((item) => (
           <View key={`${item.productId}-${item.name}`} className="mb-2 flex-row justify-between">
-            <Text className="flex-1 pr-2 text-muted">
-              {item.name} x{item.quantity}
-            </Text>
+            <View className="flex-1 pr-2">
+              <Text className="text-muted">
+                {item.name} x{item.quantity}
+              </Text>
+              {item.details ? (
+                <Text className="mt-0.5 text-[12px] text-muted">{item.details}</Text>
+              ) : null}
+            </View>
             <Text className="font-semibold text-foreground">
               {CURRENCY}
               {item.price * item.quantity}

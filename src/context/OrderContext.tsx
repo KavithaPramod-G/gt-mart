@@ -25,7 +25,14 @@ import {
   notifyShopNewOrder,
 } from '@/services/whatsapp';
 import { normalizePhone } from '@/services/auth';
-import { CartItem, DeliveryAddress, Order, OrderStatus, PaymentMethod } from '@/types';
+import {
+  CartItem,
+  ComboCartLine,
+  DeliveryAddress,
+  Order,
+  OrderStatus,
+  PaymentMethod,
+} from '@/types';
 
 const ORDERS_STORAGE_KEY = '@gt_mart_orders';
 
@@ -46,6 +53,7 @@ interface OrderContextValue {
   isLoaded: boolean;
   placeOrder: (
     items: CartItem[],
+    combos: ComboCartLine[],
     address: DeliveryAddress,
     paymentMethod?: PaymentMethod,
   ) => Promise<Order>;
@@ -110,11 +118,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   );
 
   const placeOrderLocal = useCallback(
-    (items: CartItem[], address: DeliveryAddress, paymentMethod: PaymentMethod): Order => {
-      const subtotal = items.reduce(
-        (total, item) => total + item.product.price * item.quantity,
-        0,
-      );
+    (
+      items: CartItem[],
+      combos: ComboCartLine[],
+      address: DeliveryAddress,
+      paymentMethod: PaymentMethod,
+    ): Order => {
+      const subtotal =
+        items.reduce((total, item) => total + item.product.price * item.quantity, 0) +
+        combos.reduce((total, line) => total + line.comboPrice * line.quantity, 0);
       const orderNumber = generateOrderNumber(
         getNextSequenceFromOrders(orders.map((order) => order.orderNumber)),
       );
@@ -127,13 +139,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       const order: Order = {
         id: `${Date.now()}`,
         orderNumber,
-        items: items.map((item) => ({
-          productId: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-          unit: item.product.unit,
-        })),
+        items: [
+          ...combos.map((line) => ({
+            productId: line.comboId,
+            name: line.title,
+            price: line.comboPrice,
+            quantity: line.quantity,
+            unit: 'pack',
+            details: line.includedSummary,
+          })),
+          ...items.map((item) => ({
+            productId: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            unit: item.product.unit,
+          })),
+        ],
         subtotal,
         deliveryFee: DELIVERY_FEE,
         total: subtotal + DELIVERY_FEE,
@@ -177,17 +199,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const placeOrder = useCallback(
     async (
       items: CartItem[],
+      combos: ComboCartLine[],
       address: DeliveryAddress,
       paymentMethod: PaymentMethod = 'cod',
     ): Promise<Order> => {
       let order: Order | null = null;
 
       if (isSupabaseConfigured()) {
-        order = await placeOrderInDb(items, address, user?.id, paymentMethod);
+        order = await placeOrderInDb(items, combos, address, user?.id, paymentMethod);
       }
 
       if (!order) {
-        order = placeOrderLocal(items, address, paymentMethod);
+        order = placeOrderLocal(items, combos, address, paymentMethod);
         setOrders((current) => [order!, ...current]);
         if (!isSupabaseConfigured()) {
           await AsyncStorage.setItem(
