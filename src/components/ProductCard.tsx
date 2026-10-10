@@ -66,7 +66,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       : 0;
 
   return (
-    <Pressable onPress={onPress} className="mb-4 active:opacity-95">
+    <View className="mb-4">
       <View className="relative mb-2 w-full" style={product.inStock ? undefined : { opacity: 0.55 }}>
         <ProductImage product={product} size="card" />
         <View className="absolute bottom-2 right-2" pointerEvents="box-none">
@@ -86,7 +86,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         </View>
       </View>
 
-      <View className="px-0.5">
+      <Pressable onPress={onPress} disabled={!onPress} className="px-0.5">
         <View className="mb-1.5 self-start rounded-md border border-primary/30 bg-primary-light/40 px-2 py-0.5">
           <Text className="text-[11px] font-semibold text-primary">{product.unit}</Text>
         </View>
@@ -127,7 +127,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
             </Text>
           </Pressable>
         ) : null}
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }

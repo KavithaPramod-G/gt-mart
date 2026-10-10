@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  FlatList,
   Image,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -11,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { ProductImageViewer } from '@/components/ProductImageViewer';
 import { categoryShowsFullPhoto } from '@/constants/categoryMeta';
 import { Product } from '@/types';
 
@@ -42,9 +41,8 @@ function resolveGalleryUrls(product: Pick<Product, 'imageUrl' | 'imageUrls'>): s
 export function ProductImage({ product, size = 'md' }: ProductImageProps) {
   const urls = useMemo(() => resolveGalleryUrls(product), [product.imageUrl, product.imageUrls]);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [frameWidth, setFrameWidth] = useState(0);
-  const listRef = useRef<FlatList<string>>(null);
   const { width: windowWidth } = useWindowDimensions();
 
   const primaryUri = urls[0] ?? null;
@@ -53,8 +51,7 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
 
   useEffect(() => {
     setLoadFailed(false);
-    setActiveIndex(0);
-    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    setViewerOpen(false);
   }, [product.name, urls.join('|')]);
 
   if (size === 'card') {
@@ -72,57 +69,40 @@ export function ProductImage({ product, size = 'md' }: ProductImageProps) {
         }}
       >
         {showPhoto ? (
-          urls.length > 1 && pageWidth > 0 ? (
-            <>
-              <FlatList
-                ref={listRef}
-                data={urls}
-                keyExtractor={(item, index) => `${item}-${index}`}
-                horizontal
-                pagingEnabled
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                bounces={false}
-                style={{ width: pageWidth, height: pageWidth }}
-                onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-                  const index = Math.round(event.nativeEvent.contentOffset.x / pageWidth);
-                  setActiveIndex(Math.max(0, Math.min(index, urls.length - 1)));
-                }}
-                renderItem={({ item }) => (
-                  <Image
-                    source={{ uri: item }}
-                    accessibilityLabel={product.name}
-                    style={{ width: pageWidth, height: pageWidth }}
-                    resizeMode={resizeMode}
-                    onError={() => {
-                      if (item === primaryUri) setLoadFailed(true);
-                    }}
-                  />
-                )}
-              />
-              <View style={styles.dots} pointerEvents="none">
-                {urls.map((url, index) => (
-                  <View
-                    key={`${url}-dot-${index}`}
-                    style={[styles.dot, index === activeIndex ? styles.dotActive : null]}
-                  />
-                ))}
-              </View>
-            </>
-          ) : (
+          <Pressable
+            onPress={() => setViewerOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              urls.length > 1 ? `Open ${urls.length} photos of ${product.name}` : `Open photo of ${product.name}`
+            }
+            style={styles.cardImage}
+          >
             <Image
               source={{ uri: primaryUri! }}
               accessibilityLabel={product.name}
-              style={styles.cardImage}
+              style={{ width: pageWidth, height: pageWidth }}
               resizeMode={resizeMode}
               onError={() => setLoadFailed(true)}
             />
-          )
+            {urls.length > 1 ? (
+              <View style={styles.photoCount} pointerEvents="none">
+                <Text style={styles.photoCountText}>{urls.length} photos</Text>
+              </View>
+            ) : null}
+          </Pressable>
         ) : (
           <View style={styles.cardFallback} className="items-center justify-center bg-primary-light/50">
             <Text className="text-5xl">{product.emoji || '🛒'}</Text>
           </View>
         )}
+        {viewerOpen && urls.length > 0 ? (
+          <ProductImageViewer
+            urls={urls}
+            name={product.name}
+            resizeMode={resizeMode}
+            onClose={() => setViewerOpen(false)}
+          />
+        ) : null}
       </View>
     );
   }
@@ -169,24 +149,18 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  dots: {
+  photoCount: {
     position: 'absolute',
+    left: 8,
     bottom: 8,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-  },
-  dotActive: {
-    backgroundColor: '#FFFFFF',
-    width: 8,
-    height: 8,
+  photoCountText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

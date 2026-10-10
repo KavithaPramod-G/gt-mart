@@ -88,14 +88,15 @@ export async function fetchProductsPage(
   const search = params.search?.trim();
 
   const runQuery = async (columns: string) => {
-    let query = supabase
-      .from('products')
-      .select(columns, { count: 'exact' })
-      .order('item_name');
+    let query = supabase.from('products').select(columns, { count: 'exact' });
 
     if (params.categoryId) {
-      query = query.eq('category_id', params.categoryId);
+      query = query
+        .eq('category_id', params.categoryId)
+        .order('in_stock', { ascending: false, nullsFirst: false });
     }
+
+    query = query.order('item_name');
 
     if (search) {
       query = query.ilike('item_name', `%${escapeIlikePattern(search)}%`);

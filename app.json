@@ -15,13 +15,27 @@
         {
           "photosPermission": "Allow RROne to access photos so you can upload UPI payment screenshots."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gtmart.app",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["upi", "tez", "gpay", "phonepe"]
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "tez",
+          "gpay",
+          "phonepe"
+        ]
       }
     },
     "android": {
@@ -33,13 +47,27 @@
       "package": "com.gtmart.app",
       "predictiveBackGestureEnabled": false,
       "queries": [
-        { "scheme": "upi" },
-        { "scheme": "tez" },
-        { "scheme": "gpay" },
-        { "scheme": "phonepe" },
-        { "package": "com.google.android.apps.nbu.paisa.user" },
-        { "package": "com.phonepe.app" },
-        { "package": "com.google.android.apps.nfc.payment" }
+        {
+          "scheme": "upi"
+        },
+        {
+          "scheme": "tez"
+        },
+        {
+          "scheme": "gpay"
+        },
+        {
+          "scheme": "phonepe"
+        },
+        {
+          "package": "com.google.android.apps.nbu.paisa.user"
+        },
+        {
+          "package": "com.phonepe.app"
+        },
+        {
+          "package": "com.google.android.apps.nfc.payment"
+        }
       ]
     },
     "web": {
