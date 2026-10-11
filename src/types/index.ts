@@ -146,3 +146,15 @@ export interface UserProfile {
 export type UserProfileUpdate = Partial<
   Pick<UserProfile, 'name' | 'addressLine' | 'landmark' | 'whatsappUpdatesEnabled'>
 >;
+
+export interface ShopAnnouncement {
+  id: string;
+  kind: 'offer' | 'news';
+  title: string;
+  subtitle: string;
+  body: string;
+  badge: string;
+  emoji: string;
+  imageUrl: string | null;
+  categoryId: string | null;
+}

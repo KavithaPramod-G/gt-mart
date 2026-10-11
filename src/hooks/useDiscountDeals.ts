@@ -55,5 +55,5 @@ export function useDiscountDeals() {
     );
   }, [products]);
 
-  return { sections, isLoading, maxDiscountPercent, refresh };
+  return { sections, isLoading, maxDiscountPercent, count: products.length, refresh };
 }

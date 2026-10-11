@@ -2,12 +2,10 @@ import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { CategoryImage } from '@/components/CategoryImage';
-import { DealsHeroCard } from '@/components/DealsHeroCard';
-import { FestivalCombosSection } from '@/components/FestivalCombosSection';
-import { ALL_PRODUCTS_META, categoryShowsFullPhoto } from '@/constants/categoryMeta';
+import { HomeOfferSlides } from '@/components/HomeOfferSlides';
+import { ALL_PRODUCTS_META } from '@/constants/categoryMeta';
 import { groupCategoriesByParent } from '@/constants/categoryGroups';
 import { useCategories } from '@/context/CategoriesContext';
-import { useDiscountDeals } from '@/hooks/useDiscountDeals';
 import { ShopCategory } from '@/types';
 
 const GRID_PADDING = 16;
@@ -41,7 +39,6 @@ interface CategoryHeroCardsProps {
 interface CategoryTileProps {
   category: ShopCategory;
   cardWidth: number;
-  featured?: boolean;
   getCategoryLabel: (categoryId: string) => string;
   getCategoryUi: (categoryId: string) => ShopCategory;
   onPress: (categoryId: string) => void;
@@ -50,14 +47,12 @@ interface CategoryTileProps {
 function CategoryTile({
   category,
   cardWidth,
-  featured = false,
   getCategoryLabel,
   getCategoryUi,
   onPress,
 }: CategoryTileProps) {
   const meta = getCategoryUi(category.id);
   const hasImage = Boolean(meta.imageUrl?.trim());
-  const innerWidth = cardWidth - 20;
   const emojiSize = getEmojiFontSize(cardWidth);
   const labelFontSize = getLabelFontSize(cardWidth);
   const blurbFontSize = getBlurbFontSize(cardWidth);
@@ -67,18 +62,14 @@ function CategoryTile({
     <Pressable
       onPress={() => onPress(category.id)}
       style={{ width: cardWidth, backgroundColor: meta.tint }}
-      className={`overflow-hidden rounded-2xl border-2 border-border p-2.5 active:opacity-90 ${featured ? 'min-h-[112px]' : ''}`}
+      className="overflow-hidden rounded-2xl border-2 border-border p-2.5 active:opacity-90"
     >
       {hasImage ? (
         <View
           className="mb-2 overflow-hidden rounded-xl bg-white/80"
           style={{ borderWidth: 1, borderColor: `${meta.accent}33` }}
         >
-          <CategoryImage
-            category={meta}
-            size={featured || categoryShowsFullPhoto(category.id) ? 'hero' : 'md'}
-            frameWidth={innerWidth}
-          />
+          <CategoryImage category={meta} size="md" />
         </View>
       ) : (
         <Text className="mb-1" style={{ fontSize: emojiSize, lineHeight: emojiSize * 1.05 }}>
@@ -98,7 +89,7 @@ function CategoryTile({
         <Text
           className="mt-0.5 text-muted"
           style={{ fontSize: blurbFontSize, lineHeight: blurbFontSize * 1.35 }}
-          numberOfLines={featured ? 2 : 1}
+          numberOfLines={1}
         >
           {meta.blurb}
         </Text>
@@ -124,9 +115,6 @@ function CategoryGroupSection({
   getCategoryUi,
   onPress,
 }: CategoryGroupSectionProps) {
-  const featuredWidth = cardWidth * 2 + GRID_GAP;
-  const [featured, ...rest] = categories;
-
   return (
     <View className="mb-6">
       <View className="mb-3">
@@ -134,31 +122,18 @@ function CategoryGroupSection({
         <View className="mt-1.5 h-1 w-14 rounded-full bg-primary" />
       </View>
 
-      {featured ? (
-        <CategoryTile
-          category={featured}
-          cardWidth={featuredWidth}
-          featured
-          getCategoryLabel={getCategoryLabel}
-          getCategoryUi={getCategoryUi}
-          onPress={onPress}
-        />
-      ) : null}
-
-      {rest.length > 0 ? (
-        <View className="mt-2.5 flex-row flex-wrap" style={{ gap: GRID_GAP }}>
-          {rest.map((category) => (
-            <CategoryTile
-              key={category.id}
-              category={category}
-              cardWidth={cardWidth}
-              getCategoryLabel={getCategoryLabel}
-              getCategoryUi={getCategoryUi}
-              onPress={onPress}
-            />
-          ))}
-        </View>
-      ) : null}
+      <View className="flex-row flex-wrap" style={{ gap: GRID_GAP }}>
+        {categories.map((category) => (
+          <CategoryTile
+            key={category.id}
+            category={category}
+            cardWidth={cardWidth}
+            getCategoryLabel={getCategoryLabel}
+            getCategoryUi={getCategoryUi}
+            onPress={onPress}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -168,7 +143,6 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
   const columns = getColumnCount(width);
   const cardWidth = getCardWidth(width, columns);
   const { categories, parentGroups, isLoading, getCategoryLabel, getCategoryUi } = useCategories();
-  const { maxDiscountPercent } = useDiscountDeals();
 
   const handlePress = (category: string | 'all') => {
     if (onCategoryPress) {
@@ -194,6 +168,8 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
 
   return (
     <View className="pt-4" style={{ paddingHorizontal: GRID_PADDING }}>
+      <HomeOfferSlides />
+
       <Text className="mb-3 text-base font-bold text-foreground">Browse departments</Text>
 
       <Pressable
@@ -209,10 +185,6 @@ export function CategoryHeroCards({ onCategoryPress }: CategoryHeroCardsProps) {
           <Text className="text-lg text-primary">→</Text>
         </View>
       </Pressable>
-
-      <DealsHeroCard maxDiscountPercent={maxDiscountPercent} />
-
-      <FestivalCombosSection />
 
       {groupedCategories.map(({ group, categories: groupCategories }) => (
         <CategoryGroupSection

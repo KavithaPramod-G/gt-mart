@@ -63,6 +63,8 @@ export default function RootLayout() {
                 <Stack.Screen name="deals" options={{ title: "Today's deals" }} />
                 <Stack.Screen name="combos" options={{ title: 'Festival combos' }} />
                 <Stack.Screen name="combo/[id]" options={{ title: 'Combo' }} />
+                <Stack.Screen name="offer/bogo" options={{ title: 'Buy 1 Get 1' }} />
+                <Stack.Screen name="announcement/[id]" options={{ title: 'Announcement' }} />
               </Stack>
             </OrderProvider>
           </CartProvider>

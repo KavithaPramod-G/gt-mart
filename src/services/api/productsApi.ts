@@ -165,3 +165,46 @@ export async function fetchDiscountDealProducts(): Promise<Product[] | null> {
     .map(mapProduct)
     .filter((product) => product.mrp > product.price);
 }
+
+export async function fetchProductsByIds(ids: string[]): Promise<Product[]> {
+  const supabase = getSupabase();
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (!supabase || unique.length === 0) return [];
+
+  let result = await supabase.from('products').select(PRODUCT_COLUMNS).in('id', unique);
+  if (result.error && isMissingImageUrlsColumn(result.error.message)) {
+    result = await supabase.from('products').select(LEGACY_PRODUCT_COLUMNS).in('id', unique);
+  }
+
+  const { data, error } = result;
+  if (error || !data) {
+    console.warn('[productsApi] fetch by ids failed:', error?.message);
+    return [];
+  }
+
+  const byId = new Map((data as DbProduct[]).map((row) => [row.id, mapProduct(row)]));
+  return unique.flatMap((id) => {
+    const product = byId.get(id);
+    return product ? [product] : [];
+  });
+}
+
+/** Products marked Buy 1 Get 1 in admin. Null when the offer column is not installed yet. */
+export async function fetchBogoProducts(): Promise<Product[] | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('products')
+    .select(PRODUCT_COLUMNS)
+    .eq('offer_tag', 'bogo')
+    .order('in_stock', { ascending: false, nullsFirst: false })
+    .order('item_name');
+
+  if (error || !data) {
+    console.warn('[productsApi] fetch buy 1 get 1 failed:', error?.message);
+    return null;
+  }
+
+  return (data as DbProduct[]).map(mapProduct);
+}
