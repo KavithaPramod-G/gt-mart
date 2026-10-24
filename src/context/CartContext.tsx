@@ -19,18 +19,26 @@ interface CartContextValue {
   itemCount: number;
   subtotal: number;
   addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: string, offerShelf?: boolean) => void;
+  updateQuantity: (productId: string, quantity: number, offerShelf?: boolean) => void;
   addCombo: (line: Omit<ComboCartLine, 'quantity'>, quantity?: number) => void;
   removeCombo: (comboId: string) => void;
   updateComboQuantity: (comboId: string, quantity: number) => void;
   getComboQuantity: (comboId: string) => number;
   clearCart: () => void;
-  getQuantity: (productId: string) => number;
+  getQuantity: (productId: string, offerShelf?: boolean) => number;
   isLoaded: boolean;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
+
+function isOfferLine(product: Product): boolean {
+  return product.offerShelf === true;
+}
+
+function sameCartLine(item: CartItem, productId: string, offerShelf: boolean): boolean {
+  return item.product.id === productId && isOfferLine(item.product) === offerShelf;
+}
 
 function parseStoredCart(raw: string): { products: CartItem[]; combos: ComboCartLine[] } {
   const parsed = JSON.parse(raw) as unknown;
@@ -77,10 +85,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback((product: Product, quantity = 1) => {
     if (!product.inStock) return;
     setItems((current) => {
-      const existing = current.find((item) => item.product.id === product.id);
+      const offerShelf = isOfferLine(product);
+      const existing = current.find((item) => sameCartLine(item, product.id, offerShelf));
       if (existing) {
         return current.map((item) =>
-          item.product.id === product.id
+          sameCartLine(item, product.id, offerShelf)
             ? { ...item, quantity: item.quantity + quantity }
             : item,
         );
@@ -89,19 +98,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((current) => current.filter((item) => item.product.id !== productId));
+  const removeItem = useCallback((productId: string, offerShelf = false) => {
+    setItems((current) => current.filter((item) => !sameCartLine(item, productId, offerShelf)));
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, offerShelf = false) => {
     if (quantity <= 0) {
-      setItems((current) => current.filter((item) => item.product.id !== productId));
+      setItems((current) => current.filter((item) => !sameCartLine(item, productId, offerShelf)));
       return;
     }
 
     setItems((current) =>
       current.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item,
+        sameCartLine(item, productId, offerShelf) ? { ...item, quantity } : item,
       ),
     );
   }, []);
@@ -141,8 +150,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getQuantity = useCallback(
-    (productId: string) =>
-      items.find((item) => item.product.id === productId)?.quantity ?? 0,
+    (productId: string, offerShelf = false) =>
+      items.find((item) => sameCartLine(item, productId, offerShelf))?.quantity ?? 0,
     [items],
   );
 

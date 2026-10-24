@@ -52,7 +52,10 @@ export function CartDock() {
             <CartComboRow key={line.comboId} line={line} />
           ))}
           {items.map((item) => (
-            <CartItemRow key={item.product.id} item={item} />
+            <CartItemRow
+              key={`${item.product.id}-${item.product.offerShelf ? 'offer' : 'category'}`}
+              item={item}
+            />
           ))}
 
           <View className="mb-2 rounded-2xl border border-border bg-background p-3">

@@ -11,6 +11,8 @@ import { Product } from '@/types';
 interface ProductCardProps {
   product: Product;
   onPress?: () => void;
+  /** Offer shelves list MRP as the sale price. Regular categories list the discounted sale price. */
+  showMrpRate?: boolean;
 }
 
 function CartControl({
@@ -55,13 +57,18 @@ function CartControl({
   );
 }
 
-export function ProductCard({ product, onPress }: ProductCardProps) {
+export function ProductCard({ product, onPress, showMrpRate = false }: ProductCardProps) {
   const { addItem, updateQuantity, getQuantity } = useCart();
   const { findCombosForProduct } = useCombos();
-  const quantity = getQuantity(product.id);
+  const offerShelf = Boolean(showMrpRate && product.mrp > 0);
+  const quantity = getQuantity(product.id, offerShelf);
   const relatedCombo = findCombosForProduct(product)[0];
+  const listedPrice = offerShelf ? product.mrp : product.price;
+  const cartProduct = offerShelf
+    ? { ...product, price: product.mrp, offerShelf: true }
+    : product;
   const discount =
-    product.mrp > product.price
+    !showMrpRate && product.mrp > product.price
       ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
       : 0;
 
@@ -74,9 +81,9 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
             <CartControl
               quantity={quantity}
               canIncrease={product.inStock}
-              onAdd={() => addItem(product)}
-              onDecrease={() => updateQuantity(product.id, quantity - 1)}
-              onIncrease={() => updateQuantity(product.id, quantity + 1)}
+              onAdd={() => addItem(cartProduct)}
+              onDecrease={() => updateQuantity(product.id, quantity - 1, offerShelf)}
+              onIncrease={() => updateQuantity(product.id, quantity + 1, offerShelf)}
             />
           ) : (
             <View className="rounded-md bg-white px-2 py-1">
@@ -104,14 +111,14 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         ) : null}
 
         <ProductPrice
-          mrp={product.mrp}
-          price={product.price}
+          mrp={showMrpRate ? listedPrice : product.mrp}
+          price={listedPrice}
           size="sm"
           showDiscountPercent={false}
         />
 
         <Text className="mt-0.5 text-[11px] text-muted">
-          {CURRENCY}{product.price} / {product.unit}
+          {CURRENCY}{listedPrice} / {product.unit}
         </Text>
 
         {relatedCombo ? (

@@ -150,6 +150,7 @@ export async function placeOrderInDb(
       price: item.product.price,
       quantity: item.quantity,
       unit: item.product.unit,
+      ...(item.product.offerShelf ? { price_basis: 'mrp' } : {}),
     })),
   ];
 

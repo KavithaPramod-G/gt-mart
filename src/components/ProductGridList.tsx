@@ -23,6 +23,8 @@ type ProductGridListProps = Omit<
   products: Product[];
   isLoadingMore?: boolean;
   hasMore?: boolean;
+  /** List MRP instead of the sale price. Used only on 1+1 shelves. */
+  showMrpRate?: boolean;
 };
 
 export function useProductGridCardWidth() {
@@ -38,6 +40,7 @@ export function ProductGridList({
   products,
   isLoadingMore = false,
   hasMore = false,
+  showMrpRate = false,
   contentContainerStyle,
   ListFooterComponent,
   ...rest
@@ -65,7 +68,7 @@ export function ProductGridList({
       contentContainerStyle={mergedContentStyle}
       renderItem={({ item }) => (
         <View style={{ width: cardWidth }}>
-          <ProductCard product={item} />
+          <ProductCard product={item} showMrpRate={showMrpRate} />
         </View>
       )}
       ListFooterComponent={

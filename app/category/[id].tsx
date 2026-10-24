@@ -11,6 +11,7 @@ import { ALL_PRODUCTS_META, isShopListingId } from '@/constants/categoryMeta';
 import { useCategories } from '@/context/CategoriesContext';
 import { usePaginatedProducts } from '@/hooks/usePaginatedProducts';
 import { isSupabaseConfigured } from '@/lib/env';
+import { isOnePlusOneShelf } from '@/utils/onePlusOne';
 
 export default function CategoryProductsScreen() {
   const { id, q } = useLocalSearchParams<{ id: string; q?: string }>();
@@ -100,6 +101,7 @@ export default function CategoryProductsScreen() {
           <ProductGridList
             className="flex-1"
             products={products}
+            showMrpRate={isOnePlusOneShelf(label) || isOnePlusOneShelf(categoryId)}
             onEndReached={loadMore}
             onEndReachedThreshold={0.4}
             isLoadingMore={isLoadingMore}

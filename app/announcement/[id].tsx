@@ -102,6 +102,7 @@ export default function AnnouncementScreen() {
         ) : (
           <ProductGridList
             products={showLinked || categoryId ? listedProducts : []}
+            showMrpRate
             isLoadingMore={isLoadingMore}
             hasMore={!showLinked && Boolean(categoryId) && hasMore}
             onEndReached={!showLinked && categoryId ? loadMore : undefined}

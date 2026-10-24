@@ -233,9 +233,13 @@ export default function CheckoutScreen() {
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
           <Text className="mb-4 text-base font-bold text-foreground">Order summary</Text>
           {items.map((item) => (
-            <View key={item.product.id} className="mb-2 flex-row justify-between">
+            <View
+              key={`${item.product.id}-${item.product.offerShelf ? 'offer' : 'category'}`}
+              className="mb-2 flex-row justify-between"
+            >
               <Text className="flex-1 pr-2 text-muted">
-                {item.product.name} x{item.quantity}
+                {item.product.name}
+                {item.product.offerShelf ? ' · Offer price' : ''} x{item.quantity}
               </Text>
               <Text className="font-semibold text-foreground">
                 {CURRENCY}

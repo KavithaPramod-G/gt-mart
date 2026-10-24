@@ -32,6 +32,8 @@ export interface Product {
   /** Ordered gallery for swipe; falls back to imageUrl when empty. */
   imageUrls?: string[];
   inStock: boolean;
+  /** Cart line added from an offer shelf. Sale price on that line is the MRP. */
+  offerShelf?: boolean;
 }
 
 export interface CartItem {

@@ -53,6 +53,7 @@ export default function BogoOfferScreen() {
         ) : (
           <ProductGridList
             products={products}
+            showMrpRate
             contentContainerStyle={{ paddingBottom: cartDockInset + 24, paddingTop: 12 }}
           />
         )}
