@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryHeroCards } from '@/components/CategoryHeroCards';
@@ -52,6 +53,15 @@ export default function ShopScreen() {
 
       {!isSearching ? (
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
+          <Pressable
+            onPress={() => router.push('/agencies')}
+            className="mx-4 mt-4 rounded-2xl border border-border bg-surface px-4 py-3"
+          >
+            <Text className="text-base font-bold text-foreground">Agency bulk order</Text>
+            <Text className="mt-1 text-xs text-muted">
+              Choose an item, a size such as 250 grams, and how many pieces.
+            </Text>
+          </Pressable>
           <CategoryHeroCards />
         </ScrollView>
       ) : isLoading && products.length === 0 ? (
