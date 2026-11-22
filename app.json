@@ -24,7 +24,8 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "./plugins/withOptionalPortraitFeature.js"
     ],
     "ios": {
       "supportsTablet": true,
