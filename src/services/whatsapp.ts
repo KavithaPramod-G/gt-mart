@@ -103,7 +103,9 @@ export function buildOrderPlacedMessage(order: Order): string {
   const paymentLabel =
     order.paymentMethod === 'upi'
       ? 'UPI (GPay / PhonePe) — share payment proof on WhatsApp after paying'
-      : PAYMENT_METHOD_LABELS.cod;
+      : order.paymentMethod === 'razorpay'
+        ? 'UPI via Razorpay — payment is confirmed automatically'
+        : PAYMENT_METHOD_LABELS.cod;
 
   return [
     `🛒 *New Order - ${SHOP_NAME}*`,
@@ -129,9 +131,9 @@ export function buildStatusUpdateMessage(order: Order, status: OrderStatus): str
     confirmed: `Order *${order.orderNumber}* is confirmed! We are getting your items ready.`,
     preparing: `Order *${order.orderNumber}* is being packed at ${SHOP_NAME}.`,
     out_for_delivery:
-      order.paymentMethod === 'upi'
-        ? `Order *${order.orderNumber}* is out for delivery.`
-        : `Order *${order.orderNumber}* is out for delivery. Please keep cash ready (${CURRENCY}${order.total}).`,
+      order.paymentMethod === 'cod' && order.paymentStatus !== 'verified'
+        ? `Order *${order.orderNumber}* is out for delivery. Please keep cash ready (${CURRENCY}${order.total}).`
+        : `Order *${order.orderNumber}* is out for delivery.`,
     delivered: `Order *${order.orderNumber}* has been delivered. Thank you for shopping at ${SHOP_NAME}! 🎉`,
     cancelled: `Order *${order.orderNumber}* was cancelled. Contact ${SHOP_NAME} if you have questions.`,
   };

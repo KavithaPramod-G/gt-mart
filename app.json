@@ -3,7 +3,7 @@
     "name": "RROne",
     "slug": "gt-mart",
     "owner": "gtmart-kvl",
-    "version": "1.0.0",
+    "version": "1.0.17",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "gtmart",
@@ -25,7 +25,8 @@
           }
         }
       ],
-      "./plugins/withOptionalPortraitFeature.js"
+      "./plugins/withOptionalPortraitFeature.js",
+      "expo-web-browser"
     ],
     "ios": {
       "supportsTablet": true,
@@ -46,6 +47,7 @@
         "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.gtmart.app",
+      "versionCode": 17,
       "predictiveBackGestureEnabled": false,
       "queries": [
         {

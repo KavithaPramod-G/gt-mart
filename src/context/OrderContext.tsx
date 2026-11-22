@@ -56,6 +56,7 @@ interface OrderContextValue {
     combos: ComboCartLine[],
     address: DeliveryAddress,
     paymentMethod?: PaymentMethod,
+    options?: { notifyShop?: boolean },
   ) => Promise<Order>;
   getOrder: (id: string) => Order | undefined;
   advanceOrderStatus: (orderId: string) => Promise<Order | undefined>;
@@ -202,6 +203,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       combos: ComboCartLine[],
       address: DeliveryAddress,
       paymentMethod: PaymentMethod = 'cod',
+      options?: { notifyShop?: boolean },
     ): Promise<Order> => {
       let order: Order | null = null;
 
@@ -226,7 +228,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      await notifyShopNewOrder(order);
+      if (options?.notifyShop !== false) {
+        await notifyShopNewOrder(order);
+      }
       return order;
     },
     [placeOrderLocal, orders, user?.id],

@@ -1,7 +1,8 @@
-import { DELIVERY_FEE } from '@/constants/config';
+import { DELIVERY_FEE, isDevCheckoutEnabled } from '@/constants/config';
 import { getSupabase } from '@/lib/supabase';
 import { normalizePhone } from '@/services/auth';
 import { buildStatusUpdateMessage } from '@/services/whatsapp';
+import { parsePaymentMethod } from '@/utils/paymentMethod';
 import {
   CartItem,
   ComboCartLine,
@@ -29,6 +30,8 @@ interface DbOrderPayload {
   payment_note?: string | null;
   payment_proof_url?: string | null;
   payment_upi_reference?: string | null;
+  razorpay_payment_link_url?: string | null;
+  razorpay_payment_id?: string | null;
   status: OrderStatus;
   created_at: string;
   updated_at: string;
@@ -64,11 +67,13 @@ function mapDbOrderPayload(payload: DbOrderPayload): Order {
     subtotal: Number(payload.subtotal),
     deliveryFee: Number(payload.delivery_fee),
     total: Number(payload.total),
-    paymentMethod: payload.payment_method === 'upi' ? 'upi' : 'cod',
+    paymentMethod: parsePaymentMethod(payload.payment_method),
     paymentStatus: payload.payment_status ?? 'pending',
     paymentNote: payload.payment_note ?? null,
     paymentProofUrl: payload.payment_proof_url ?? null,
     paymentUpiReference: payload.payment_upi_reference ?? null,
+    razorpayPaymentLinkUrl: payload.razorpay_payment_link_url ?? null,
+    razorpayPaymentId: payload.razorpay_payment_id ?? null,
     address: {
       name: payload.customer_name,
       phone: payload.customer_phone,
@@ -154,7 +159,7 @@ export async function placeOrderInDb(
     })),
   ];
 
-  const { data: orderId, error } = await supabase.rpc('place_order', {
+  const rpcArgs = {
     p_profile_id: profileId ?? null,
     p_customer_name: address.name.trim(),
     p_customer_phone: customerPhone,
@@ -166,14 +171,59 @@ export async function placeOrderInDb(
     p_items: payloadItems,
     p_initial_message: initialMessage,
     p_payment_method: paymentMethod,
+  };
+  const devMinimum = isDevCheckoutEnabled();
+  let { data: orderId, error } = await supabase.rpc('place_order', {
+    ...rpcArgs,
+    ...(devMinimum ? { p_allow_dev_minimum: true } : {}),
   });
 
+  // Migration 038 adds this argument. Until it is applied, the shared
+  // database still has the previous place_order, which has no minimum check.
+  if (
+    devMinimum &&
+    error &&
+    /p_allow_dev_minimum|schema cache|could not find the function/i.test(error.message ?? '')
+  ) {
+    const retry = await supabase.rpc('place_order', rpcArgs);
+    orderId = retry.data;
+    error = retry.error;
+  }
+
   if (error || !orderId) {
-    console.warn('[ordersApi] place_order failed:', error?.message);
+    const detail = error?.message ?? '';
+    console.warn('[ordersApi] place_order failed:', detail);
+    if (paymentMethod === 'razorpay') {
+      throw new Error(describePlaceOrderError(detail));
+    }
     return null;
   }
 
-  return fetchOrderByPhoneAndId(customerPhone, orderId as string);
+  const placed = await fetchOrderByPhoneAndId(customerPhone, orderId as string);
+  if (!placed && paymentMethod === 'razorpay') {
+    throw new Error(
+      'The order was saved but could not be loaded. Open Orders and tap Pay now.',
+    );
+  }
+  return placed;
+}
+
+function describePlaceOrderError(detail: string): string {
+  const lower = detail.toLowerCase();
+  if (lower.includes('minimum order')) {
+    return detail;
+  }
+  if (lower.includes('payment method')) {
+    return 'UPI payment is not set up on the server yet. Run supabase/migrations/037_razorpay_payments.sql in the Supabase SQL editor, or choose cash on delivery.';
+  }
+  if (
+    lower.includes('p_allow_dev_minimum') ||
+    lower.includes('schema cache') ||
+    lower.includes('could not find the function')
+  ) {
+    return 'Dev checkout is not enabled on the server yet. Run supabase/migrations/038_dev_min_order.sql in the Supabase SQL editor, then try again.';
+  }
+  return detail || 'Could not place the order for UPI payment. Please try again.';
 }
 
 export async function fetchOrdersBySession(sessionId: string): Promise<Order[]> {

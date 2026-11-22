@@ -19,7 +19,14 @@ export const SHOP_NAME = 'RROne';
 export const SHOP_LOCATION = 'GT Mart · Kavali';
 export const SHOP_TAGLINE = 'Shop everything. Delivered locally';
 export const DELIVERY_FEE = 0;
-export const MIN_ORDER_AMOUNT = 500;
+
+/** ₹50 checkout for local Metro and for builds that set EXPO_PUBLIC_DEV_CHECKOUT=1. Production stays ₹500. */
+export function isDevCheckoutEnabled(): boolean {
+  const flag = process.env.EXPO_PUBLIC_DEV_CHECKOUT?.trim();
+  return (typeof __DEV__ !== 'undefined' && __DEV__) || flag === '1';
+}
+
+export const MIN_ORDER_AMOUNT = isDevCheckoutEnabled() ? 50 : 500;
 export const CURRENCY = '₹';
 
 /** Public legal pages (set in .env / eas.json after admin is deployed). */
@@ -60,11 +67,19 @@ export const ORDER_PAYMENT_SHORT_LABELS: Record<
 export const PAYMENT_METHOD_LABELS: Record<import('@/types').PaymentMethod, string> = {
   cod: 'Cash on delivery',
   upi: 'Pay online (GPay / PhonePe)',
+  razorpay: 'Pay now (UPI)',
 };
 
 /** Shop UPI ID for online payments (set EXPO_PUBLIC_SHOP_UPI_ID in eas.json). */
 export const SHOP_UPI_ID = process.env.EXPO_PUBLIC_SHOP_UPI_ID?.trim() ?? '';
 export const SHOP_UPI_PAYEE_NAME = process.env.EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME?.trim() || SHOP_NAME;
+
+/** Public Razorpay Key ID only. The key secret stays in Supabase function secrets. */
+export const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID?.trim() ?? '';
+
+export function isRazorpayConfigured(): boolean {
+  return RAZORPAY_KEY_ID.startsWith('rzp_');
+}
 
 /** Local fallback OTP when Supabase is not configured */
 export const DEV_MOCK_OTP = '123456';

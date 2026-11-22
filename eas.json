@@ -13,8 +13,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://lesiblcrpxfihahseotg.supabase.co",
@@ -22,8 +23,10 @@
         "EXPO_PUBLIC_OTP_DEV_MODE": "false",
         "EXPO_PUBLIC_PHONE_ONLY_AUTH": "false",
         "EXPO_PUBLIC_PASSWORD_AUTH": "true",
+        "EXPO_PUBLIC_DEV_CHECKOUT": "1",
         "EXPO_PUBLIC_SHOP_UPI_ID": "9290860984@idfcfirst",
-        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "Gottipati Ramesh"
+        "EXPO_PUBLIC_SHOP_UPI_PAYEE_NAME": "Gottipati Ramesh",
+        "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_test_U3FoXjDLuY6Df1"
       }
     },
     "production": {

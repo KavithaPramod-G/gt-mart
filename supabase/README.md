@@ -123,6 +123,60 @@ Login skips OTP — customer enters mobile number only. Run migration `010_phone
 
 When MSG91 is ready, set `EXPO_PUBLIC_PHONE_ONLY_AUTH=false` and rebuild.
 
+## Razorpay UPI checkout
+
+Customers can pay a placed order with GPay, PhonePe, or another UPI app through a Razorpay Payment Link. The link amount is the order total stored in the database. The phone never marks the order paid. `payment_status` becomes `verified` only when the webhook checks `x-razorpay-signature` and the paid amount.
+
+Cash on delivery and the shop UPI screenshot flow stay as they are. The Razorpay option appears in the app only when `EXPO_PUBLIC_RAZORPAY_KEY_ID` is set.
+
+### 1. Razorpay account
+
+1. Sign up at [razorpay.com](https://razorpay.com/)
+2. Copy **Key ID** and **Key Secret** from Razorpay Dashboard → Account & Settings → API Keys
+3. Create a webhook secret in Razorpay Dashboard → Account & Settings → Webhooks
+
+### 2. Run migration `037_razorpay_payments.sql`
+
+Adds the `razorpay` payment method and payment-link columns. It keeps the current `place_order` pricing (combos, offer shelf price, out-of-stock rejection). Do not run the old stashed `028_razorpay_payments.sql`.
+
+### 3. Deploy Edge Functions
+
+```bash
+supabase functions deploy create-razorpay-payment-link
+supabase functions deploy razorpay-webhook
+```
+
+### 4. Set function secrets
+
+Supabase Dashboard → Edge Functions → Secrets (or `supabase secrets set`). Do not put these in the Expo app or `eas.json`.
+
+| Secret | Value |
+|--------|-------|
+| `RAZORPAY_KEY_ID` | `rzp_test_...` or `rzp_live_...` |
+| `RAZORPAY_KEY_SECRET` | Razorpay key secret |
+| `RAZORPAY_WEBHOOK_SECRET` | The secret from the Razorpay webhook |
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are already provided to Edge Functions.
+
+### 5. Webhook in Razorpay Dashboard
+
+URL:
+
+`https://YOUR_PROJECT_REF.supabase.co/functions/v1/razorpay-webhook`
+
+Enable these events:
+
+- `payment_link.paid`
+- `payment.captured`
+
+### 6. Mobile app
+
+```env
+EXPO_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxx
+```
+
+Use the same public Key ID in `.env` for local runs and in `eas.json` preview/production `env` before the next store build. Never put the key secret or webhook secret in the app or `eas.json`.
+
 ## API functions (RPC)
 
 | Function | Purpose |
@@ -137,6 +191,7 @@ When MSG91 is ready, set `EXPO_PUBLIC_PHONE_ONLY_AUTH=false` and rebuild.
 | `validate_customer_session` | Restore login on app open |
 | `revoke_customer_session` | Log out |
 | `place_order` | Create order + items + first notification |
+| `verify_razorpay_order_payment` | Mark a Razorpay order paid (service role / webhook only) |
 | `update_order_status` | Advance order status |
 | `generate_order_number` | `GT-YYYYMMDD-0001` format |
 

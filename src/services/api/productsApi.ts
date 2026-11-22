@@ -75,6 +75,46 @@ function isMissingImageUrlsColumn(message?: string): boolean {
     .includes('image_urls');
 }
 
+function isMissingPlacementTable(message?: string): boolean {
+  const text = String(message ?? '').toLowerCase();
+  return text.includes('product_category_placements') && (
+    text.includes('does not exist') ||
+    text.includes('schema cache') ||
+    text.includes('could not find')
+  );
+}
+
+async function fetchPlacementProductIds(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  categoryId: string,
+): Promise<string[]> {
+  const ids: string[] = [];
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('product_category_placements')
+      .select('product_id')
+      .eq('category_id', categoryId)
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      if (!isMissingPlacementTable(error.message)) {
+        console.warn('[productsApi] category copies unavailable:', error.message);
+      }
+      return ids;
+    }
+
+    const rows = data ?? [];
+    ids.push(...rows.map((row) => String(row.product_id)));
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return ids;
+}
+
 export async function fetchProductsPage(
   params: FetchProductsPageParams,
 ): Promise<FetchProductsPageResult | null> {
@@ -86,14 +126,22 @@ export async function fetchProductsPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
   const search = params.search?.trim();
+  const extraIds = params.categoryId
+    ? await fetchPlacementProductIds(supabase, params.categoryId)
+    : [];
 
   const runQuery = async (columns: string) => {
     let query = supabase.from('products').select(columns, { count: 'exact' });
 
     if (params.categoryId) {
-      query = query
-        .eq('category_id', params.categoryId)
-        .order('in_stock', { ascending: false, nullsFirst: false });
+      if (extraIds.length > 0) {
+        query = query.or(
+          `category_id.eq.${params.categoryId},id.in.(${extraIds.join(',')})`,
+        );
+      } else {
+        query = query.eq('category_id', params.categoryId);
+      }
+      query = query.order('in_stock', { ascending: false, nullsFirst: false });
     }
 
     query = query.order('item_name');

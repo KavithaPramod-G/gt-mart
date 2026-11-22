@@ -22,12 +22,15 @@ function getOrderCardHint(order: Order): {
   }
 
   if (
-    order.paymentMethod === 'upi' &&
+    (order.paymentMethod === 'upi' || order.paymentMethod === 'razorpay') &&
     order.paymentStatus !== 'verified' &&
     order.status !== 'delivered'
   ) {
     return {
-      text: 'Tap to pay with GPay/PhonePe and share payment on WhatsApp',
+      text:
+        order.paymentMethod === 'razorpay'
+          ? 'Tap to pay with GPay, PhonePe, or another UPI app'
+          : 'Tap to pay with GPay/PhonePe and share payment on WhatsApp',
       tone: 'payment',
     };
   }
@@ -73,8 +76,8 @@ export default function OrdersScreen() {
         const history = getSortedStatusUpdates(order.whatsappNotifications);
         const lastUpdate = history[history.length - 1];
         const hint = getOrderCardHint(order);
-        const needsUpiPayment =
-          order.paymentMethod === 'upi' &&
+        const needsOnlinePayment =
+          (order.paymentMethod === 'upi' || order.paymentMethod === 'razorpay') &&
           order.paymentStatus !== 'verified' &&
           order.status !== 'cancelled' &&
           order.status !== 'delivered';
@@ -119,11 +122,13 @@ export default function OrdersScreen() {
               {order.total} · {PAYMENT_METHOD_LABELS[order.paymentMethod]}
             </Text>
 
-            {needsUpiPayment ? (
+            {needsOnlinePayment ? (
               <View className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
                 <Text className="text-sm font-semibold text-amber-900">Payment pending</Text>
                 <Text className="mt-0.5 text-sm leading-5 text-amber-800">
-                  Open this order to pay and send proof on WhatsApp.
+                  {order.paymentMethod === 'razorpay'
+                    ? 'Open this order to pay with GPay, PhonePe, or another UPI app.'
+                    : 'Open this order to pay and send proof on WhatsApp.'}
                 </Text>
               </View>
             ) : null}

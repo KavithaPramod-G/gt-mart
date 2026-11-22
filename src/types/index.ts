@@ -88,7 +88,7 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
-export type PaymentMethod = 'cod' | 'upi';
+export type PaymentMethod = 'cod' | 'upi' | 'razorpay';
 
 export type OrderPaymentStatus = 'pending' | 'verified';
 
@@ -121,6 +121,8 @@ export interface Order {
   paymentNote?: string | null;
   paymentProofUrl?: string | null;
   paymentUpiReference?: string | null;
+  razorpayPaymentLinkUrl?: string | null;
+  razorpayPaymentId?: string | null;
   address: DeliveryAddress;
   status: OrderStatus;
   createdAt: string;

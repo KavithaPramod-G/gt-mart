@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
 import { OrderStatusHistory } from '@/components/OrderStatusHistory';
+import { RazorpayPaymentSection } from '@/components/RazorpayPaymentSection';
 import { UpiPaymentSection } from '@/components/UpiPaymentSection';
 import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -12,8 +14,18 @@ import { useOrders } from '@/context/OrderContext';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getOrder, advanceOrderStatus, sendWhatsAppUpdate } = useOrders();
+  const { getOrder, advanceOrderStatus, sendWhatsAppUpdate, refreshOrderFromServer } = useOrders();
   const order = id ? getOrder(id) : undefined;
+  const refreshOrderFromServerRef = useRef(refreshOrderFromServer);
+  refreshOrderFromServerRef.current = refreshOrderFromServer;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        void refreshOrderFromServerRef.current(id);
+      }
+    }, [id]),
+  );
 
   if (!order) {
     return (
@@ -32,7 +44,9 @@ export default function OrderDetailScreen() {
         <Ionicons name="receipt-outline" size={48} color="#1B7A4E" />
         <Text className="mt-2 text-lg font-bold text-foreground">{order.orderNumber}</Text>
         <Text className="mt-2 text-center leading-5 text-muted">
-          {order.paymentMethod === 'upi' && order.paymentStatus !== 'verified'
+          {order.paymentMethod === 'razorpay' && order.paymentStatus !== 'verified'
+            ? 'Pay with GPay, PhonePe, or another UPI app below. Payment is confirmed automatically.'
+            : order.paymentMethod === 'upi' && order.paymentStatus !== 'verified'
             ? 'Pay with GPay or PhonePe below, then share payment details on WhatsApp. Track delivery updates here.'
             : 'Track delivery updates, payment status, and full order history below.'}
         </Text>
@@ -58,6 +72,12 @@ export default function OrderDetailScreen() {
       </View>
 
       <UpiPaymentSection order={order} />
+      <RazorpayPaymentSection
+        order={order}
+        onPaid={() => {
+          void refreshOrderFromServer(order.id);
+        }}
+      />
 
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
         <Text className="mb-2 text-base font-bold text-foreground">Items</Text>
@@ -86,7 +106,7 @@ export default function OrderDetailScreen() {
             {order.total}
           </Text>
         </View>
-        {order.paymentMethod === 'cod' ? (
+        {order.paymentMethod !== 'upi' && order.paymentMethod !== 'razorpay' ? (
           <View className="mt-3 flex-row items-center justify-between rounded-xl bg-background px-3 py-2">
             <Text className="text-sm text-muted">Payment status</Text>
             <Text

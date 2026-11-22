@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,13 +19,20 @@ import {
   MIN_ORDER_AMOUNT,
   PAYMENT_METHOD_LABELS,
   SHOP_NAME,
+  isRazorpayConfigured,
 } from '@/constants/config';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { formatPhoneDisplay } from '@/services/auth';
+import { notifyShopNewOrder } from '@/services/whatsapp';
 import { DeliveryAddress, PaymentMethod } from '@/types';
 import { cn } from '@/utils/cn';
+import {
+  closePaymentPreviewWindow,
+  openPaymentPreviewWindow,
+  startRazorpayCheckout,
+} from '@/services/razorpay';
 import { isShopUpiConfigured } from '@/services/upi';
 
 function fieldBorderClass(hasError: boolean, multiline = false) {
@@ -45,6 +51,7 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [showFieldErrors, setShowFieldErrors] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<DeliveryAddress>({
     name: '',
     phone: '',
@@ -90,14 +97,19 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (subtotal < MIN_ORDER_AMOUNT) {
+      setSubmitError(`Minimum order is ${CURRENCY}${MIN_ORDER_AMOUNT}.`);
       return;
     }
 
     if (!isValid) {
       setShowFieldErrors(true);
+      setSubmitError('Enter your name, a 10-digit phone number, and a delivery address.');
       return;
     }
 
+    setSubmitError(null);
+    const paymentTab =
+      paymentMethod === 'razorpay' ? openPaymentPreviewWindow() : null;
     setLoading(true);
     try {
       const order = await placeOrder(
@@ -111,12 +123,26 @@ export default function CheckoutScreen() {
           landmark: form.landmark?.trim(),
         },
         paymentMethod,
+        paymentMethod === 'razorpay' ? { notifyShop: false } : undefined,
       );
+
+      if (paymentMethod === 'razorpay') {
+        const payment = await startRazorpayCheckout(order, paymentTab);
+        if (payment.status === 'failed') {
+          setSubmitError(payment.message ?? 'Could not open UPI payment.');
+          return;
+        }
+      }
 
       clearCart();
       router.replace(`/order/${order.id}`);
-    } catch {
-      Alert.alert('Order failed', 'Something went wrong. Please try again.');
+      if (paymentMethod === 'razorpay') {
+        void notifyShopNewOrder(order);
+      }
+    } catch (error) {
+      closePaymentPreviewWindow(paymentTab);
+      const message = error instanceof Error ? error.message.trim() : '';
+      setSubmitError(message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -228,6 +254,27 @@ export default function CheckoutScreen() {
               <ShopUpiDetails amount={total} className="mt-3" />
             ) : null}
           </Pressable>
+
+          {isRazorpayConfigured() ? (
+            <Pressable
+              onPress={() => setPaymentMethod('razorpay')}
+              className={cn(
+                'mt-2 rounded-xl border p-4',
+                paymentMethod === 'razorpay'
+                  ? 'border-primary bg-primary-light'
+                  : 'border-border bg-background',
+              )}
+            >
+              <Text className="text-[15px] font-bold text-primary">
+                {PAYMENT_METHOD_LABELS.razorpay}
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Pay {CURRENCY}
+                {total} with GPay, PhonePe, or another UPI app. Razorpay confirms the payment.
+                You do not send a screenshot.
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
@@ -276,8 +323,15 @@ export default function CheckoutScreen() {
         className="border-t border-border bg-surface px-4 pt-4"
         style={{ paddingBottom: footerBottomPad }}
       >
+        {submitError ? (
+          <Text className="mb-3 text-center text-sm text-error">{submitError}</Text>
+        ) : null}
         <Button
-          label={`Place Order · ${CURRENCY}${total}`}
+          label={
+            paymentMethod === 'razorpay'
+              ? `Place order & pay · ${CURRENCY}${total}`
+              : `Place Order · ${CURRENCY}${total}`
+          }
           loading={loading}
           disabled={loading || !meetsMinimum}
           onPress={handlePlaceOrder}
