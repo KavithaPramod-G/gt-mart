@@ -1,7 +1,13 @@
 import * as Linking from 'expo-linking';
 import { Alert } from 'react-native';
 
-import { CURRENCY, PAYMENT_METHOD_LABELS, SHOP_NAME, SHOP_WHATSAPP_NUMBER } from '@/constants/config';
+import {
+  CURRENCY,
+  ORDER_PAYMENT_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  SHOP_NAME,
+  SHOP_WHATSAPP_NUMBER,
+} from '@/constants/config';
 import { DeliveryAddress, Order, OrderItem, OrderStatus } from '@/types';
 
 function sanitizePhone(phone: string): string {
@@ -99,19 +105,18 @@ export async function notifyShopUpiPayment(
   );
 }
 
-export function buildOrderPlacedMessage(order: Order): string {
-  const paymentLabel =
-    order.paymentMethod === 'upi'
-      ? 'UPI (GPay / PhonePe) — share payment proof on WhatsApp after paying'
-      : order.paymentMethod === 'razorpay'
-        ? 'UPI via Razorpay — payment is confirmed automatically'
-        : PAYMENT_METHOD_LABELS.cod;
+function paymentShareLine(order: Order): string {
+  const shown = ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus ?? 'pending'];
+  return `${PAYMENT_METHOD_LABELS[order.paymentMethod]} — ${shown}`;
+}
 
+/** Order details for the shop. Payment wording matches the status on screen. */
+export function buildOrderShareMessage(order: Order): string {
   return [
-    `🛒 *New Order - ${SHOP_NAME}*`,
+    `🛒 *Order - ${SHOP_NAME}*`,
     ``,
     `*Order No:* ${order.orderNumber}`,
-    `*Payment:* ${paymentLabel}`,
+    `*Payment:* ${paymentShareLine(order)}`,
     ``,
     `*Items:*`,
     formatItems(order.items),
@@ -123,6 +128,25 @@ export function buildOrderPlacedMessage(order: Order): string {
     `*Delivery Address:*`,
     formatAddress(order.address),
   ].join('\n');
+}
+
+export function buildOrderPlacedMessage(order: Order): string {
+  return buildOrderShareMessage(order);
+}
+
+export async function shareOrderOnWhatsApp(order: Order): Promise<boolean> {
+  return openWhatsApp(SHOP_WHATSAPP_NUMBER, buildOrderShareMessage(order));
+}
+
+export function promptToShareOrder(order: Order): void {
+  Alert.alert(
+    'Share this order on WhatsApp?',
+    'Send the order number, items, total, address, and payment status to the shop.',
+    [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Share', onPress: () => void shareOrderOnWhatsApp(order) },
+    ],
+  );
 }
 
 export function buildStatusUpdateMessage(order: Order, status: OrderStatus): string {
@@ -142,7 +166,7 @@ export function buildStatusUpdateMessage(order: Order, status: OrderStatus): str
 }
 
 export async function notifyShopNewOrder(order: Order): Promise<boolean> {
-  return openWhatsApp(SHOP_WHATSAPP_NUMBER, buildOrderPlacedMessage(order));
+  return shareOrderOnWhatsApp(order);
 }
 
 export async function notifyCustomerStatusUpdate(

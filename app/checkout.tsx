@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,7 +26,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { formatPhoneDisplay } from '@/services/auth';
-import { notifyShopNewOrder } from '@/services/whatsapp';
 import { DeliveryAddress, PaymentMethod } from '@/types';
 import { cn } from '@/utils/cn';
 import {
@@ -49,7 +49,9 @@ export default function CheckoutScreen() {
   const { placeOrder } = useOrders();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    isRazorpayConfigured() ? 'razorpay' : 'cod',
+  );
   const [showFieldErrors, setShowFieldErrors] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<DeliveryAddress>({
@@ -123,22 +125,26 @@ export default function CheckoutScreen() {
           landmark: form.landmark?.trim(),
         },
         paymentMethod,
-        paymentMethod === 'razorpay' ? { notifyShop: false } : undefined,
       );
 
-      if (paymentMethod === 'razorpay') {
-        const payment = await startRazorpayCheckout(order, paymentTab);
-        if (payment.status === 'failed') {
-          setSubmitError(payment.message ?? 'Could not open UPI payment.');
-          return;
-        }
+      clearCart();
+
+      if (paymentMethod !== 'razorpay') {
+        router.replace(`/order/${order.id}?share=1`);
+        return;
       }
 
-      clearCart();
-      router.replace(`/order/${order.id}`);
-      if (paymentMethod === 'razorpay') {
-        void notifyShopNewOrder(order);
+      const payment = await startRazorpayCheckout(order, paymentTab);
+      if (payment.handedOff) {
+        return;
       }
+      if (payment.status === 'failed') {
+        Alert.alert(
+          'UPI payment',
+          payment.message ?? 'Could not open UPI payment. You can try Pay now from the order.',
+        );
+      }
+      router.replace(`/order/${order.id}?share=1`);
     } catch (error) {
       closePaymentPreviewWindow(paymentTab);
       const message = error instanceof Error ? error.message.trim() : '';
@@ -217,6 +223,27 @@ export default function CheckoutScreen() {
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
           <Text className="mb-4 text-base font-bold text-foreground">Payment</Text>
 
+          {isRazorpayConfigured() ? (
+            <Pressable
+              onPress={() => setPaymentMethod('razorpay')}
+              className={cn(
+                'mb-2 rounded-xl border p-4',
+                paymentMethod === 'razorpay'
+                  ? 'border-primary bg-primary-light'
+                  : 'border-border bg-background',
+              )}
+            >
+              <Text className="text-[15px] font-bold text-primary">
+                {PAYMENT_METHOD_LABELS.razorpay}
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Pay {CURRENCY}
+                {total} with GPay, PhonePe, or another UPI app. Razorpay confirms the payment.
+                You do not send a screenshot.
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Pressable
             onPress={() => setPaymentMethod('cod')}
             className={cn(
@@ -247,34 +274,13 @@ export default function CheckoutScreen() {
             <Text className="text-[15px] font-bold text-primary">{PAYMENT_METHOD_LABELS.upi}</Text>
             <Text className="mt-1 text-sm leading-5 text-muted">
               {isShopUpiConfigured()
-                ? `Pay ${CURRENCY}${total} via GPay or PhonePe after placing the order, then share payment details on WhatsApp.`
+                ? `On the order screen, pay ${CURRENCY}${total} with GPay or PhonePe. Share a screenshot from there if you want.`
                 : 'Online UPI payment will be available soon. Use cash on delivery for now.'}
             </Text>
             {paymentMethod === 'upi' && isShopUpiConfigured() ? (
               <ShopUpiDetails amount={total} className="mt-3" />
             ) : null}
           </Pressable>
-
-          {isRazorpayConfigured() ? (
-            <Pressable
-              onPress={() => setPaymentMethod('razorpay')}
-              className={cn(
-                'mt-2 rounded-xl border p-4',
-                paymentMethod === 'razorpay'
-                  ? 'border-primary bg-primary-light'
-                  : 'border-border bg-background',
-              )}
-            >
-              <Text className="text-[15px] font-bold text-primary">
-                {PAYMENT_METHOD_LABELS.razorpay}
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-muted">
-                Pay {CURRENCY}
-                {total} with GPay, PhonePe, or another UPI app. Razorpay confirms the payment.
-                You do not send a screenshot.
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
 
         <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
@@ -312,9 +318,9 @@ export default function CheckoutScreen() {
 
         <View className="rounded-xl border border-[#B8E6C8] bg-[#E8F8EE] p-4">
           <Text className="text-sm leading-5 text-muted">
-            After placing your order, WhatsApp opens with your order number and
-            details sent to {SHOP_NAME}. Delivery updates are also shared on
-            WhatsApp.
+            After you place the order, this app shows the order and payment
+            status. You can share those details with {SHOP_NAME} on WhatsApp
+            from the order screen. Delivery updates are also shared on WhatsApp.
           </Text>
         </View>
       </ScrollView>

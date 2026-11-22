@@ -11,6 +11,7 @@ export interface RazorpayPaymentLinkResult {
 export async function createRazorpayPaymentLink(
   orderId: string,
   phone: string,
+  returnUrl?: string,
 ): Promise<RazorpayPaymentLinkResult> {
   const supabase = getSupabase();
   if (!supabase) {
@@ -21,6 +22,7 @@ export async function createRazorpayPaymentLink(
     body: {
       order_id: orderId,
       phone: normalizePhone(phone),
+      return_url: returnUrl,
     },
   });
 

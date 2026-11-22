@@ -19,11 +19,7 @@ import {
   placeOrderInDb,
 } from '@/services/api/ordersApi';
 import { generateOrderNumber, getNextSequenceFromOrders } from '@/services/orderNumber';
-import {
-  buildStatusUpdateMessage,
-  notifyCustomerStatusUpdate,
-  notifyShopNewOrder,
-} from '@/services/whatsapp';
+import { buildStatusUpdateMessage, notifyCustomerStatusUpdate } from '@/services/whatsapp';
 import { normalizePhone } from '@/services/auth';
 import {
   CartItem,
@@ -56,7 +52,6 @@ interface OrderContextValue {
     combos: ComboCartLine[],
     address: DeliveryAddress,
     paymentMethod?: PaymentMethod,
-    options?: { notifyShop?: boolean },
   ) => Promise<Order>;
   getOrder: (id: string) => Order | undefined;
   advanceOrderStatus: (orderId: string) => Promise<Order | undefined>;
@@ -203,7 +198,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       combos: ComboCartLine[],
       address: DeliveryAddress,
       paymentMethod: PaymentMethod = 'cod',
-      options?: { notifyShop?: boolean },
     ): Promise<Order> => {
       let order: Order | null = null;
 
@@ -228,9 +222,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      if (options?.notifyShop !== false) {
-        await notifyShopNewOrder(order);
-      }
       return order;
     },
     [placeOrderLocal, orders, user?.id],

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Platform, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { OrderStatusTimeline } from '@/components/OrderStatusTimeline';
@@ -11,13 +12,40 @@ import { UpiPaymentSection } from '@/components/UpiPaymentSection';
 import { CURRENCY, ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants/config';
 import { isSupabaseConfigured } from '@/lib/env';
 import { useOrders } from '@/context/OrderContext';
+import { refreshPaymentAfterReturn } from '@/services/razorpay';
+import { promptToShareOrder, shareOrderOnWhatsApp } from '@/services/whatsapp';
+
+const promptedShareOrders = new Set<string>();
+
+function claimSharePrompt(orderId: string): boolean {
+  if (promptedShareOrders.has(orderId)) return false;
+
+  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+    try {
+      const key = `gtmart-order-share:${orderId}`;
+      if (localStorage.getItem(key) === '1') {
+        promptedShareOrders.add(orderId);
+        return false;
+      }
+      localStorage.setItem(key, '1');
+    } catch {
+      // Storage can be blocked. The in-memory set still covers this tab.
+    }
+  }
+
+  promptedShareOrders.add(orderId);
+  return true;
+}
 
 export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getOrder, advanceOrderStatus, sendWhatsAppUpdate, refreshOrderFromServer } = useOrders();
+  const { id, share } = useLocalSearchParams<{ id: string; share?: string }>();
+  const shareParam = Array.isArray(share) ? share[0] : share;
+  const { getOrder, advanceOrderStatus, sendWhatsAppUpdate, refreshOrderFromServer, isLoaded } =
+    useOrders();
   const order = id ? getOrder(id) : undefined;
   const refreshOrderFromServerRef = useRef(refreshOrderFromServer);
   refreshOrderFromServerRef.current = refreshOrderFromServer;
+  const shareStartedFor = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,6 +54,38 @@ export default function OrderDetailScreen() {
       }
     }, [id]),
   );
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    WebBrowser.maybeCompleteAuthSession({ skipRedirectCheck: true });
+  }, []);
+
+  useEffect(() => {
+    if (!id || shareStartedFor.current === id || shareParam !== '1' || !order) return;
+    if (!claimSharePrompt(id)) {
+      shareStartedFor.current = id;
+      return;
+    }
+    shareStartedFor.current = id;
+    router.setParams({ share: '' });
+    const initial = order;
+    void (async () => {
+      const latest = await refreshPaymentAfterReturn(id, (orderId) =>
+        refreshOrderFromServerRef.current(orderId),
+      );
+      const shown = latest ?? initial;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      promptToShareOrder(shown);
+    })();
+  }, [shareParam, id, order]);
+
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background p-8">
+        <Text className="text-base text-muted">Loading order…</Text>
+      </View>
+    );
+  }
 
   if (!order) {
     return (
@@ -45,9 +105,9 @@ export default function OrderDetailScreen() {
         <Text className="mt-2 text-lg font-bold text-foreground">{order.orderNumber}</Text>
         <Text className="mt-2 text-center leading-5 text-muted">
           {order.paymentMethod === 'razorpay' && order.paymentStatus !== 'verified'
-            ? 'Pay with GPay, PhonePe, or another UPI app below. Payment is confirmed automatically.'
+            ? 'Pay with GPay, PhonePe, or another UPI app below if you still need to. This screen shows Payment pending until the payment is received.'
             : order.paymentMethod === 'upi' && order.paymentStatus !== 'verified'
-            ? 'Pay with GPay or PhonePe below, then share payment details on WhatsApp. Track delivery updates here.'
+            ? 'Pay with GPay or PhonePe below. Share a payment screenshot with the button on this screen if you want.'
             : 'Track delivery updates, payment status, and full order history below.'}
         </Text>
       </View>
@@ -74,9 +134,7 @@ export default function OrderDetailScreen() {
       <UpiPaymentSection order={order} />
       <RazorpayPaymentSection
         order={order}
-        onPaid={() => {
-          void refreshOrderFromServer(order.id);
-        }}
+        onReturned={() => refreshPaymentAfterReturn(order.id, refreshOrderFromServer)}
       />
 
       <View className="mb-4 rounded-2xl border border-border bg-surface p-4">
@@ -133,6 +191,11 @@ export default function OrderDetailScreen() {
       </View>
 
       <View className="gap-2">
+        <Button
+          label="Share on WhatsApp"
+          variant="whatsapp"
+          onPress={() => void shareOrderOnWhatsApp(order)}
+        />
         <Button
           label="Resend WhatsApp update"
           variant="whatsapp"

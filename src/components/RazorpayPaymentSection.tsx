@@ -8,10 +8,10 @@ import { Order } from '@/types';
 
 interface RazorpayPaymentSectionProps {
   order: Order;
-  onPaid?: () => Promise<void> | void;
+  onReturned?: () => Promise<unknown> | void;
 }
 
-export function RazorpayPaymentSection({ order, onPaid }: RazorpayPaymentSectionProps) {
+export function RazorpayPaymentSection({ order, onReturned }: RazorpayPaymentSectionProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isVerified = order.paymentStatus === 'verified';
@@ -30,7 +30,10 @@ export function RazorpayPaymentSection({ order, onPaid }: RazorpayPaymentSection
         setError(result.message ?? 'Could not open UPI payment.');
         return;
       }
-      await onPaid?.();
+      if (result.handedOff) {
+        return;
+      }
+      await onReturned?.();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not open UPI payment.');
     } finally {
@@ -44,7 +47,7 @@ export function RazorpayPaymentSection({ order, onPaid }: RazorpayPaymentSection
       <Text className="mb-3 text-sm leading-5 text-muted">
         {isVerified
           ? 'Payment received. Thank you.'
-          : 'Pay with GPay, PhonePe, or another UPI app. The shop confirms payment automatically. Do not send a screenshot for this payment.'}
+          : 'Pay with GPay, PhonePe, or another UPI app. Payment received shows here only after Razorpay confirms it. Do not send a screenshot for this payment.'}
       </Text>
 
       <View className="mb-3 flex-row items-center justify-between rounded-xl bg-background px-3 py-2">
